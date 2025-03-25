@@ -1,12 +1,14 @@
 import 'dart:io';
+import 'dart:convert';
+import 'dart:developer'; // Import for logging
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'about_page.dart';
 import 'history_page.dart';
 import 'help_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert'; // For JSON encoding and decoding
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -19,9 +21,8 @@ class HomeViewState extends State<HomeView> {
   File? _pickedImage;
   String? _prediction;
   final ImagePicker _picker = ImagePicker();
-  final List<Map<String, dynamic>> _history = []; // Update the type of _history
+  final List<Map<String, dynamic>> _history = [];
   int _selectedIndex = 0;
-  // Removed unused _buttonStates field
 
   final List<String> _carouselImages = [
     'images/ui/sample.jpg',
@@ -39,7 +40,152 @@ class HomeViewState extends State<HomeView> {
   @override
   void initState() {
     super.initState();
-    _loadHistory(); // Load history when the app starts
+    _loadHistory();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null) {
+      log("Picked file path: ${pickedFile.path}");
+
+      if (!pickedFile.path.toLowerCase().endsWith('.jpg') &&
+          !pickedFile.path.toLowerCase().endsWith('.png')) {
+        setState(() {
+          _prediction = "Invalid file format. Only JPG and PNG are allowed.";
+        });
+        return;
+      }
+
+      setState(() {
+        _pickedImage = File(pickedFile.path);
+        _prediction = null; // Reset prediction before generating a new one
+      });
+
+      _generateDummyPrediction(); // Generate a prediction after selecting the image
+    } else {
+      log("No file selected.");
+    }
+  }
+
+  void _generateDummyPrediction() {
+    final List<String> dummyPredictions = [
+      "Chicken breast is defect-free.",
+      "Chicken breast has minor defects.",
+      "Chicken breast is heavily damaged.",
+      "Invalid: Not a chicken breast.",
+    ];
+
+    final String prediction = dummyPredictions[
+        (DateTime.now().millisecondsSinceEpoch % dummyPredictions.length)];
+
+    setState(() {
+      _prediction = prediction; // Update the prediction
+      _addToHistory(prediction); // Add the prediction to history
+    });
+  }
+
+  Future<void> _loadHistory() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? encodedHistory = prefs.getString('history');
+    if (encodedHistory != null) {
+      log("Loaded history: $encodedHistory");
+      setState(() {
+        _history.clear();
+        _history.addAll(
+            List<Map<String, dynamic>>.from(jsonDecode(encodedHistory)));
+      });
+    } else {
+      log("No history found.");
+    }
+  }
+
+  void _addToHistory(String prediction) {
+    final String timestamp = DateTime.now().toString();
+    setState(() {
+      _history.add({
+        "image": _pickedImage?.path,
+        "prediction": "$timestamp: $prediction",
+      });
+
+      if (_history.length > 5) {
+        _history.removeAt(0);
+      }
+    });
+
+    log("Updated history: $_history");
+    _saveHistory();
+  }
+
+  Future<void> _saveHistory() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String encodedHistory = jsonEncode(_history);
+    await prefs.setString('history', encodedHistory);
+  }
+
+  Widget _buildPromotionalCards() {
+    final List<Map<String, String>> features = [
+      {
+        "title": "Defect Detection",
+        "description": "Automatically detect defects in chicken breast images.",
+      },
+      {
+        "title": "History Tracking",
+        "description": "Keep track of your previous uploads and predictions.",
+      },
+      {
+        "title": "User-Friendly",
+        "description": "Simple and intuitive interface for easy navigation.",
+      },
+      {
+        "title": "Fast Processing",
+        "description": "Get predictions in seconds with high accuracy.",
+      },
+    ];
+
+    return SizedBox(
+      height: 150,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal, // Enables horizontal scrolling
+        itemCount: features.length,
+        itemBuilder: (context, index) {
+          final feature = features[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Container(
+                width: 250,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      feature["title"]!,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.purple,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      feature["description"]!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildHomePage() {
@@ -56,15 +202,32 @@ class HomeViewState extends State<HomeView> {
                 enlargeCenterPage: true,
               ),
               items: _carouselImages.map((imagePath) {
+                log("Loading image: $imagePath"); // Debug log
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: Image.asset(
                     imagePath,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Text("Failed to load image."),
+                      );
+                    },
                   ),
                 );
               }).toList(),
             ),
+            const SizedBox(height: 20),
+            const Text(
+              "Features",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.purple,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _buildPromotionalCards(),
             const SizedBox(height: 30),
             if (_pickedImage != null)
               Padding(
@@ -77,9 +240,18 @@ class HomeViewState extends State<HomeView> {
                     child: Image.file(
                       _pickedImage!,
                       fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Text("Failed to load image."),
+                        );
+                      },
                     ),
                   ),
                 ),
+              )
+            else
+              const Center(
+                child: Text("No image selected."),
               ),
             const SizedBox(height: 5),
             if (_prediction != null)
@@ -88,12 +260,11 @@ class HomeViewState extends State<HomeView> {
                 child: Center(
                   child: Text(
                     _prediction!,
-                    textAlign: TextAlign.center, // Center the text
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color:
-                          Colors.red, // Optional: Highlight invalid text in red
+                      color: Colors.red,
                     ),
                   ),
                 ),
@@ -108,100 +279,46 @@ class HomeViewState extends State<HomeView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _selectedIndex == 0
-              ? "Chicken Defect Classification"
-              : _selectedIndex == 1
-                  ? "History"
-                  : _selectedIndex == 2
-                      ? "About"
-                      : "Help",
-        ),
+        title: const Text("Check-A-Doodle-Doo"),
         centerTitle: true,
-        elevation: 0,
-        leading: _selectedIndex == 0
-            ? null // No back arrow on the Home page
-            : IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    _selectedIndex = 0; // Navigate back to the Home page
-                  });
-                },
-              ),
       ),
       body: _widgetOptions[_selectedIndex],
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton(
-              onPressed: _showImageSourceDialog,
-              backgroundColor:
-                  Colors.transparent, // Make the button background transparent
-              elevation: 0, // Remove the shadow
-              child: const Icon(
-                Icons.add_a_photo,
-                color: Colors.purple, // Keep the icon visible with a color
-              ),
+              onPressed: () {
+                _showImageSourceDialog();
+              },
+              backgroundColor: Colors.purple,
+              child: const Icon(Icons.camera_alt, color: Colors.white),
             )
           : null,
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          splashFactory: NoSplash.splashFactory, // Disable ripple effect
-        ),
-        child: BottomNavigationBar(
-          items: _selectedIndex == 0
-              ? const <BottomNavigationBarItem>[
-                  // Show only History, About, and Help on the Home page
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.history),
-                    label: 'History',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.info),
-                    label: 'About',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.help),
-                    label: 'Help',
-                  ),
-                ]
-              : const <BottomNavigationBarItem>[
-                  // Show Home, History, About, and Help on other pages
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.home),
-                    label: 'Home',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.history),
-                    label: 'History',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.info),
-                    label: 'About',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.help),
-                    label: 'Help',
-                  ),
-                ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Colors.purple, // Purple for the selected item
-          unselectedItemColor: Colors.grey, // Grey for unselected items
-          onTap: (int index) {
-            setState(() {
-              if (_selectedIndex == 0) {
-                // If on the Home page, adjust index for navigation
-                _selectedIndex = index + 1;
-              } else if (index == 0) {
-                // Navigate back to the Home page
-                _selectedIndex = 0;
-              } else {
-                // Navigate to other pages
-                _selectedIndex = index;
-              }
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'History',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.info),
+            label: 'About',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.help),
+            label: 'Help',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.purple,
+        unselectedItemColor: Colors.grey,
+        onTap: (int index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
     );
   }
@@ -211,6 +328,7 @@ class HomeViewState extends State<HomeView> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          title: const Text("Select Image Source"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -218,16 +336,16 @@ class HomeViewState extends State<HomeView> {
                 leading: const Icon(Icons.camera),
                 title: const Text("Take a Picture"),
                 onTap: () {
-                  _pickImage(ImageSource.camera);
                   Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.photo_album),
                 title: const Text("Select from Gallery"),
                 onTap: () {
-                  _pickImage(ImageSource.gallery);
                   Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
                 },
               ),
             ],
@@ -235,83 +353,5 @@ class HomeViewState extends State<HomeView> {
         );
       },
     );
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      if (!pickedFile.path.endsWith('.jpg') &&
-          !pickedFile.path.endsWith('.png')) {
-        setState(() {
-          _prediction = "Invalid file format. Only JPG and PNG are allowed.";
-        });
-        return;
-      }
-
-      setState(() {
-        _pickedImage = File(pickedFile.path);
-        _prediction = null;
-      });
-
-      // Call the dummy model to generate a prediction
-      _generateDummyPrediction();
-    }
-  }
-
-  void _generateDummyPrediction() {
-    final List<String> dummyPredictions = [
-      "Chicken breast is defect-free.",
-      "Chicken breast has minor defects.",
-      "Chicken breast is heavily damaged.",
-      "Invalid: Not a chicken breast.",
-    ];
-
-    final String prediction = dummyPredictions[
-        (DateTime.now().millisecondsSinceEpoch % dummyPredictions.length)];
-
-    setState(() {
-      _prediction = prediction;
-      _addToHistory(prediction); // Add the prediction to history
-    });
-  }
-
-  Future<void> _saveHistory() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String encodedHistory =
-        jsonEncode(_history); // Convert history to JSON
-    await prefs.setString('history', encodedHistory); // Save to local storage
-  }
-
-  Future<void> _loadHistory() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? encodedHistory =
-        prefs.getString('history'); // Load from local storage
-    if (encodedHistory != null) {
-      setState(() {
-        _history.clear();
-        _history.addAll(
-            List<Map<String, dynamic>>.from(jsonDecode(encodedHistory)));
-      });
-    }
-  }
-
-  void _addToHistory(String prediction) {
-    final String timestamp = DateTime.now().toString(); // Add timestamp
-    setState(() {
-      // Add the new entry
-      _history.add({
-        "image": _pickedImage
-            ?.path, // Save the image path instead of the File object
-        "prediction":
-            "$timestamp: $prediction", // Save the prediction with timestamp
-      });
-
-      // Limit history to 5 entries
-      if (_history.length > 5) {
-        _history.removeAt(0); // Remove the oldest entry
-      }
-    });
-
-    _saveHistory(); // Save the updated history to local storage
   }
 }
