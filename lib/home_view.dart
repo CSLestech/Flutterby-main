@@ -89,7 +89,7 @@ class HomeView extends StatefulWidget {
 
 class HomeViewState extends State<HomeView> {
   File? _pickedImage;
-  String? _prediction;
+  Map<String, dynamic>? _prediction;
   final ImagePicker _picker = ImagePicker();
   final List<Map<String, dynamic>> _history = [];
   int _selectedIndex = 0;
@@ -140,7 +140,11 @@ class HomeViewState extends State<HomeView> {
       if (!pickedFile.path.toLowerCase().endsWith('.jpg') &&
           !pickedFile.path.toLowerCase().endsWith('.png')) {
         setState(() {
-          _prediction = "Invalid file format. Only JPG and PNG are allowed.";
+          _prediction = {
+            "text": "Invalid file format. Only JPG and PNG are allowed.",
+            "icon": Icons.error,
+            "color": Colors.grey,
+          };
         });
         return;
       }
@@ -157,14 +161,30 @@ class HomeViewState extends State<HomeView> {
   }
 
   void _generateDummyPrediction() {
-    final List<String> dummyPredictions = [
-      "Chicken breast is Consumable.",
-      "Chicken breast is Half Consumable.",
-      "Chicken breast is Not Consumable.",
-      "Invalid: Not a chicken breast.",
+    final List<Map<String, dynamic>> dummyPredictions = [
+      {
+        "text": "Safe to Eat (Consumable)",
+        "icon": Icons.check_circle,
+        "color": Colors.green,
+      },
+      {
+        "text": "Consume with Risk (Half-Consumable)",
+        "icon": Icons.warning,
+        "color": Colors.orange,
+      },
+      {
+        "text": "Not Safe to Eat (Not Consumable)",
+        "icon": Icons.cancel,
+        "color": Colors.red,
+      },
+      {
+        "text": "Invalid: Not a chicken breast.",
+        "icon": Icons.error,
+        "color": Colors.grey,
+      },
     ];
 
-    final String prediction = dummyPredictions[
+    final Map<String, dynamic> prediction = dummyPredictions[
         (DateTime.now().millisecondsSinceEpoch % dummyPredictions.length)];
 
     setState(() {
@@ -188,12 +208,17 @@ class HomeViewState extends State<HomeView> {
     }
   }
 
-  void _addToHistory(String prediction) {
+  void _addToHistory(Map<String, dynamic> prediction) {
     final String timestamp = DateTime.now().toString();
     setState(() {
       _history.add({
         "image": _pickedImage?.path,
-        "prediction": "$timestamp: $prediction",
+        "prediction": {
+          "text": prediction["text"],
+          "icon": prediction["icon"],
+          "color": prediction["color"],
+        },
+        "timestamp": timestamp,
       });
 
       if (_history.length > 5) {
@@ -364,14 +389,25 @@ class HomeViewState extends State<HomeView> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Center(
-                  child: Text(
-                    _prediction!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _prediction!["icon"],
+                        color: _prediction!["color"],
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _prediction!["text"],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: _prediction!["color"],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

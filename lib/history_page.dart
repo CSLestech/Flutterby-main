@@ -70,13 +70,25 @@ class HistoryPage extends StatelessWidget {
                             ),
                           Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              prediction,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  entry["prediction"]["icon"],
+                                  color: entry["prediction"]["color"],
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  entry["prediction"]["text"],
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: entry["prediction"]["color"],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

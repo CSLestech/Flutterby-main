@@ -60,7 +60,7 @@ class AboutPage extends StatelessWidget {
                       ),
                       SizedBox(height: 15),
                       Text(
-                        "Style Sensei is a personalized fashion app that helps users discover and curate clothing styles matching their preferences and body types. Through a style quiz, it assesses individual tastes and fit needs. Based on quiz responses, Style Sensei recommends tailored outfits and clothing pieces. The app offers an extensive style catalog for browsing fashion looks. It provides fit guidance based on body shape, enabling users to stay fashionable and feel confident with personalized style advice.",
+                        "Check-a-doodle-doo is a mobile application designed to help users assess the consumability of chicken breast by utilizing advanced machine learning algorithms. The app employs a streamlined user interface that allows users to capture images or upload existing photos of chicken breast meat. Through an integrated style of image processing and classification, Check-a-doodle-doo evaluates the consumability of the meat based on visual attributes such as texture, color, and other factors.",
                         textAlign: TextAlign.justify,
                         style: TextStyle(fontFamily: "Montserrat"),
                       ) // Add your app description here
