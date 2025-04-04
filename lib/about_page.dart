@@ -40,7 +40,7 @@ class AboutPage extends StatelessWidget {
               crossAxisAlignment:
                   CrossAxisAlignment.start, // Align content to the start
               children: [
-                const SizedBox(height: 10),
+                const SizedBox(height: 10), // Replaced Container with SizedBox
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(25),
@@ -52,22 +52,34 @@ class AboutPage extends StatelessWidget {
                     crossAxisAlignment:
                         CrossAxisAlignment.start, // Align text to the start
                     children: [
-                      Text(
+                      const Text(
                         "About the App",
                         style: TextStyle(
-                            fontFamily: "Montserrat",
-                            fontWeight: FontWeight.bold),
+                          fontFamily: "Montserrat",
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
-                      SizedBox(height: 15),
-                      Text(
-                        "Check-a-doodle-doo is a mobile application designed to help users assess the consumability of chicken breast by utilizing advanced machine learning algorithms. The app employs a streamlined user interface that allows users to capture images or upload existing photos of chicken breast meat. Through an integrated style of image processing and classification, Check-a-doodle-doo evaluates the consumability of the meat based on visual attributes such as texture, color, and other factors.",
-                        textAlign: TextAlign.justify,
-                        style: TextStyle(fontFamily: "Montserrat"),
-                      ) // Add your app description here
+                      const SizedBox(
+                          height: 15), // Replaced Container with SizedBox
+                      Container(
+                        width: MediaQuery.of(context).size.width > 400
+                            ? 400 // Maximum width for larger screens
+                            : MediaQuery.of(context).size.width *
+                                0.9, // 90% of the screen width for smaller screens
+                        child: const Text(
+                          "Check-a-doodle-doo is a mobile application designed to help users assess the consumability of chicken breast by utilizing advanced machine learning algorithms. The app employs a streamlined user interface that allows users to capture images or upload existing photos of chicken breast meat. Through an integrated style of image processing and classification, Check-a-doodle-doo evaluates the consumability of the meat based on visual attributes such as texture, color, and other factors.",
+                          textAlign: TextAlign.justify, // Justify the text
+                          style: TextStyle(
+                            fontFamily: "Montserrat",
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 20), // Replaced Container with SizedBox
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -82,10 +94,13 @@ class AboutPage extends StatelessWidget {
                       const Text(
                         "Developers",
                         style: TextStyle(
-                            fontFamily: "Montserrat",
-                            fontWeight: FontWeight.bold),
+                          fontFamily: "Montserrat",
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(
+                          height: 20), // Replaced Container with SizedBox
                       ...List.generate(
                         members.length,
                         (index) {
@@ -99,7 +114,7 @@ class AboutPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 30)
+                const SizedBox(height: 30), // Replaced Container with SizedBox
               ],
             ),
           ),
@@ -122,7 +137,6 @@ class MemberCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      // Center the content horizontally
       child: Column(
         children: [
           ClipOval(
@@ -133,16 +147,23 @@ class MemberCard extends StatelessWidget {
               width: 100,
             ),
           ),
-          const SizedBox(height: 5),
-          Text(
-            name,
-            textAlign: TextAlign.center, // Center the text
-            style: const TextStyle(
-              fontFamily: "Montserrat",
-              fontWeight: FontWeight.w500,
+          const SizedBox(height: 5), // Replaced Container with SizedBox
+          Container(
+            width: MediaQuery.of(context).size.width > 400
+                ? 300 // Fixed width for larger screens
+                : MediaQuery.of(context).size.width *
+                    0.8, // 80% of the screen width for smaller screens
+            child: Text(
+              name,
+              textAlign: TextAlign.center, // Center the text
+              style: const TextStyle(
+                fontFamily: "Montserrat",
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 20), // Replaced Container with SizedBox
         ],
       ),
     );
