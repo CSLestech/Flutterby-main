@@ -119,7 +119,7 @@ class OnboardingScreenState extends State<OnboardingScreen> {
     },
     {
       "image": "assets/food_safety.png",
-      "title": "Make Safer Food Choices",
+      "title": "Be Informed",
       "description":
           "Protect yourself and your family by avoiding unsafe chicken meat."
     }
