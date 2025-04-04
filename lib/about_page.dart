@@ -48,7 +48,7 @@ class AboutPage extends StatelessWidget {
                     color: const Color.fromARGB(255, 233, 233, 233),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Column(
+                  child: Column(
                     crossAxisAlignment:
                         CrossAxisAlignment.start, // Align text to the start
                     children: [
