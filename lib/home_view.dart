@@ -89,7 +89,7 @@ class HomeView extends StatefulWidget {
 
 class HomeViewState extends State<HomeView> {
   File? _pickedImage;
-  Map<String, dynamic>? _prediction;
+    String? _prediction;
   final ImagePicker _picker = ImagePicker();
   final List<Map<String, dynamic>> _history = [];
   int _selectedIndex = 0;
@@ -140,11 +140,9 @@ class HomeViewState extends State<HomeView> {
       if (!pickedFile.path.toLowerCase().endsWith('.jpg') &&
           !pickedFile.path.toLowerCase().endsWith('.png')) {
         setState(() {
-          _prediction = {
-            "text": "Invalid file format. Only JPG and PNG are allowed.",
-            "icon": Icons.error,
-            "color": Colors.grey,
-          };
+          _prediction = _prediction = "Invalid file format. Only JPG and PNG are allowed.";
+        });
+          
         });
         return;
       }
