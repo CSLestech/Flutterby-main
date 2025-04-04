@@ -32,7 +32,7 @@ class HistoryPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 final entry = history[index];
                 final String? imagePath = entry["image"];
-                final String prediction = entry["prediction"];
+                final String timestamp = entry["timestamp"];
 
                 return GestureDetector(
                   onTap: () {
@@ -41,7 +41,8 @@ class HistoryPage extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => HistoryDetailPage(
                           imagePath: imagePath,
-                          prediction: prediction,
+                          prediction: entry["prediction"],
+                          timestamp: timestamp,
                         ),
                       ),
                     );
@@ -70,25 +71,13 @@ class HistoryPage extends StatelessWidget {
                             ),
                           Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  entry["prediction"]["icon"],
-                                  color: entry["prediction"]["color"],
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  entry["prediction"]["text"],
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: entry["prediction"]["color"],
-                                  ),
-                                ),
-                              ],
+                            child: Text(
+                              "Uploaded on: $timestamp",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -104,19 +93,18 @@ class HistoryPage extends StatelessWidget {
 
 class HistoryDetailPage extends StatelessWidget {
   final String? imagePath;
-  final String prediction;
+  final Map<String, dynamic> prediction;
+  final String timestamp;
 
   const HistoryDetailPage({
     super.key,
     required this.imagePath,
     required this.prediction,
+    required this.timestamp,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Extract only the prediction text (remove timestamp)
-    final String predictionText = prediction.split(": ").sublist(1).join(": ");
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("Prediction Details"),
@@ -138,12 +126,35 @@ class HistoryDetailPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
-              predictionText, // Display only the prediction text
+              "Uploaded on: $timestamp",
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  prediction["icon"],
+                  color: prediction["color"],
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  prediction["text"],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: prediction["color"],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
