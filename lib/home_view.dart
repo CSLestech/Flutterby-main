@@ -175,11 +175,6 @@ class HomeViewState extends State<HomeView> {
         "icon": Icons.cancel,
         "color": Colors.red,
       },
-      {
-        "text": "Invalid: Not a chicken breast.",
-        "icon": Icons.error,
-        "color": Colors.grey,
-      },
     ];
 
     final Map<String, dynamic> prediction = dummyPredictions[
