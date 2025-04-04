@@ -89,7 +89,7 @@ class HomeView extends StatefulWidget {
 
 class HomeViewState extends State<HomeView> {
   File? _pickedImage;
-    String? _prediction;
+  Map<String, dynamic>? _prediction;
   final ImagePicker _picker = ImagePicker();
   final List<Map<String, dynamic>> _history = [];
   int _selectedIndex = 0;
@@ -137,12 +137,16 @@ class HomeViewState extends State<HomeView> {
     if (pickedFile != null) {
       log("Picked file path: ${pickedFile.path}");
 
-      if (!pickedFile.path.toLowerCase().endsWith('.jpg') &&
-          !pickedFile.path.toLowerCase().endsWith('.png')) {
+      // Validate file format
+      final String fileExtension =
+          pickedFile.path.split('.').last.toLowerCase();
+      if (fileExtension != 'jpg' && fileExtension != 'png') {
         setState(() {
-          _prediction = _prediction = "Invalid file format. Only JPG and PNG are allowed.";
-        });
-          
+          _prediction = {
+            "text": "Invalid file format. Only JPG and PNG are allowed.",
+            "icon": Icons.error,
+            "color": Colors.grey,
+          };
         });
         return;
       }
@@ -174,6 +178,11 @@ class HomeViewState extends State<HomeView> {
         "text": "Not Safe to Eat (Not Consumable)",
         "icon": Icons.cancel,
         "color": Colors.red,
+      },
+      {
+        "text": "Invalid: Not a chicken breast.",
+        "icon": Icons.error,
+        "color": Colors.grey,
       },
     ];
 
