@@ -109,7 +109,7 @@ class OnboardingScreenState extends State<OnboardingScreen> {
       "image": "assets/scan.png",
       "title": "Scan & Analyze",
       "description":
-          "Snap a photo of chicken meat, and our AI will analyze its consumability!"
+          "Snap a photo of chicken meat, and let the system  analyze its consumability!"
     },
     {
       "image": "assets/results.png",
