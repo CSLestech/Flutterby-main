@@ -62,7 +62,7 @@ class AboutPage extends StatelessWidget {
                       ),
                       const SizedBox(
                           height: 15), // Replaced Container with SizedBox
-                      Container(
+                      SizedBox(
                         width: MediaQuery.of(context).size.width > 400
                             ? 400 // Maximum width for larger screens
                             : MediaQuery.of(context).size.width *
@@ -148,7 +148,7 @@ class MemberCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 5), // Replaced Container with SizedBox
-          Container(
+          SizedBox(
             width: MediaQuery.of(context).size.width > 400
                 ? 300 // Fixed width for larger screens
                 : MediaQuery.of(context).size.width *
