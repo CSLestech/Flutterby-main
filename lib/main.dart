@@ -25,7 +25,26 @@ class CadApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
       ),
-      home: const SplashScreen(),
+      home: const FixedSizeWrapper(child: SplashScreen()),
+    );
+  }
+}
+
+class FixedSizeWrapper extends StatelessWidget {
+  final Widget child;
+
+  const FixedSizeWrapper({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: 400, // Fixed width
+          maxHeight: 800, // Fixed height
+        ),
+        child: child,
+      ),
     );
   }
 }
