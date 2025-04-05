@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'home_view.dart'; // Import the HomeView class
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,20 +57,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<Map<String, String>> onboardingData = [
     {
-      "image": "assets/images/onboarding1.png",
-      "title": "Welcome",
-      "description": "Explore the features of our app.",
+      "image": "assets/scan.png",
+      "title": "Scan & Classify",
+      "description":
+          "Snap a photo of chicken meat, and let the system analyze its consumability!"
     },
     {
-      "image": "assets/images/onboarding2.png",
-      "title": "Upload Images",
-      "description": "Easily upload and analyze images.",
+      "image": "assets/results.png",
+      "title": "Get Clear Results",
+      "description": "Classified into: Safe, Risky, or Not Consumable."
     },
     {
-      "image": "assets/images/onboarding3.png",
-      "title": "Get Results",
-      "description": "Receive accurate predictions instantly.",
-    },
+      "image": "assets/food_safety.png",
+      "title": "Be Informed",
+      "description":
+          "Be aware and make better decisions by checking the quality before cooking or eating."
+    }
   ];
 
   @override
@@ -112,33 +115,64 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           if (_currentIndex != onboardingData.length - 1)
             Positioned(
-              bottom: 10,
-              right: 20,
+              top:
+                  650, // Adjust this value to move the "Next" button vertically
+              left:
+                  380, // Adjust this value to move the "Next" button horizontally
               child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 30, // Adjust the horizontal padding
+                    vertical: 15, // Adjust the vertical padding
+                  ),
+                  backgroundColor: Colors.blue, // Change the button color
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20), // Rounded corners
+                  ),
+                ),
                 onPressed: () {
                   _controller.nextPage(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeIn,
                   );
                 },
-                child: const Text("Next"),
+                child: const Text(
+                  "Next",
+                  style: TextStyle(
+                    fontSize: 18, // Adjust the font size
+                    color: Colors.white, // Change the text color
+                  ),
+                ),
               ),
             ),
           if (_currentIndex == onboardingData.length - 1)
             Positioned(
-              top: 30,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final prefs = await SharedPreferences.getInstance();
-                    await Future.delayed(const Duration(
-                        seconds: 1)); // Adjust the duration as needed
-                    await prefs.setBool('onboarding_complete', true);
-                    widget.onFinish();
-                  },
-                  child: const Text("Get Started"),
+              top:
+                  645, // Adjust this value to move the "Get Started" button vertically
+              left:
+                  169, // Adjust this value to move the "Get Started" button horizontally
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 15,
+                  ),
+                  backgroundColor: Colors.green, // Change the button color
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('onboarding_complete', true);
+                  widget.onFinish();
+                },
+                child: const Text(
+                  "Get Started",
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
