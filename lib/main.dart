@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'home_view.dart';
+import 'onboardingscreen.dart'; // Import the OnboardingScreen
+import 'home_view.dart'; // Import the HomeView from home_view.dart
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
@@ -80,7 +81,9 @@ class _SplashScreenState extends State<SplashScreen> {
       if (_onboardingComplete) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeView()),
+          MaterialPageRoute(
+              builder: (context) =>
+                  const HomeView()), // Use HomeView from home_view.dart
         );
       } else {
         Navigator.pushReplacement(
@@ -90,7 +93,9 @@ class _SplashScreenState extends State<SplashScreen> {
               onFinish: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const HomeView()),
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          const HomeView()), // Use HomeView from home_view.dart
                 );
               },
             ),
