@@ -26,7 +26,7 @@ class CadApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
       ),
-      home: const FixedSizeWrapper(child: SplashScreen()),
+      home: const SplashScreen(), // Directly use SplashScreen
     );
   }
 }
@@ -40,9 +40,10 @@ class FixedSizeWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: 400, // Fixed width
-          maxHeight: 800, // Fixed height
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width, // Use full screen width
+          maxHeight:
+              MediaQuery.of(context).size.height, // Use full screen height
         ),
         child: child,
       ),
