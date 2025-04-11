@@ -131,45 +131,22 @@ class HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     _loadHistory();
-    _requestStoragePermission(); // Request storage permission when HomeView initializes
-  }
-
-  Future<void> _requestStoragePermission() async {
-    final status = await Permission.storage.request();
-    if (status.isDenied || status.isPermanentlyDenied) {
-      // Show a dialog if permission is denied
-      _showPermissionDialog();
-    } else if (status.isGranted) {
-      debugPrint('Storage permission granted.');
-    }
-  }
-
-  void _showPermissionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Permission Required'),
-        content: const Text(
-            'Storage permission is required to access files. Please enable it in the app settings.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              openAppSettings(); // Open app settings
-            },
-            child: const Text('Settings'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    // Check if the source is gallery and request storage permission
+    if (source == ImageSource.gallery) {
+      final status = await Permission.storage.request();
+      if (status.isDenied || status.isPermanentlyDenied) {
+        // Show a dialog if permission is denied
+        _showPermissionDialog();
+        return; // Exit the method if permission is not granted
+      } else if (status.isGranted) {
+        debugPrint('Storage permission granted.');
+      }
+    }
+
+    // Proceed with picking the image
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       log("Picked file path: ${pickedFile.path}");
@@ -232,6 +209,47 @@ class HomeViewState extends State<HomeView> {
     });
   }
 
+  void _addToHistory(Map<String, dynamic> prediction) async {
+    // Add the prediction to the history list
+    setState(() {
+      _history.add(prediction);
+      if (_history.length > 5) {
+        _history.removeAt(0); // Keep only the last 5 entries
+      }
+    });
+
+    // Save the updated history to SharedPreferences
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String encodedHistory = jsonEncode(_history);
+    await prefs.setString('history', encodedHistory);
+    log("History updated: $encodedHistory");
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: const Text(
+            'Storage permission is required to access files. Please enable it in the app settings.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              openAppSettings(); // Open app settings
+            },
+            child: const Text('Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _loadHistory() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? encodedHistory = prefs.getString('history');
@@ -245,100 +263,6 @@ class HomeViewState extends State<HomeView> {
     } else {
       log("No history found.");
     }
-  }
-
-  void _addToHistory(Map<String, dynamic> prediction) {
-    final String timestamp = DateTime.now().toString();
-    setState(() {
-      _history.add({
-        "image": _pickedImage?.path,
-        "prediction": {
-          "text": prediction["text"],
-          "icon": prediction["icon"],
-          "color": prediction["color"],
-        },
-        "timestamp": timestamp,
-      });
-
-      if (_history.length > 5) {
-        _history.removeAt(0);
-      }
-    });
-
-    log("Updated history: $_history");
-    _saveHistory();
-  }
-
-  Future<void> _saveHistory() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String encodedHistory = jsonEncode(_history);
-    await prefs.setString('history', encodedHistory);
-  }
-
-  Widget _buildPromotionalCards() {
-    final List<Map<String, String>> features = [
-      {
-        "title": "Defect Detection",
-        "description": "Automatically detect defects in chicken breast images.",
-      },
-      {
-        "title": "History Tracking",
-        "description": "Keep track of your previous uploads and predictions.",
-      },
-      {
-        "title": "User-Friendly",
-        "description": "Simple and intuitive interface for easy navigation.",
-      },
-      {
-        "title": "Fast Processing",
-        "description": "Get predictions in seconds with high accuracy.",
-      },
-    ];
-
-    return SizedBox(
-      height: 150,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal, // Enables horizontal scrolling
-        itemCount: features.length,
-        itemBuilder: (context, index) {
-          final feature = features[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Container(
-                width: 250,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      feature["title"]!,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.purple,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      feature["description"]!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
   }
 
   Widget _buildHomePage() {
@@ -471,6 +395,72 @@ class HomeViewState extends State<HomeView> {
     );
   }
 
+  Widget _buildPromotionalCards() {
+    final List<Map<String, String>> features = [
+      {
+        "title": "Defect Detection",
+        "description": "Automatically detect defects in chicken breast images.",
+      },
+      {
+        "title": "History Tracking",
+        "description": "Keep track of your previous uploads and predictions.",
+      },
+      {
+        "title": "User-Friendly",
+        "description": "Simple and intuitive interface for easy navigation.",
+      },
+      {
+        "title": "Fast Processing",
+        "description": "Get predictions in seconds with high accuracy.",
+      },
+    ];
+
+    return SizedBox(
+      height: 150,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal, // Enables horizontal scrolling
+        itemCount: features.length,
+        itemBuilder: (context, index) {
+          final feature = features[index];
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Container(
+                width: 250,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      feature["title"]!,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.purple,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      feature["description"]!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -582,7 +572,8 @@ class HomeViewState extends State<HomeView> {
                 title: const Text("Select from Gallery"),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
+                  _pickImage(
+                      ImageSource.gallery); // Permission check happens here
                 },
               ),
             ],

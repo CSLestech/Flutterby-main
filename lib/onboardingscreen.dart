@@ -54,6 +54,7 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _controller = PageController();
   int _currentIndex = 0;
+  bool _showGetStartedButton = false;
 
   final List<Map<String, String>> onboardingData = [
     {
@@ -85,6 +86,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             itemCount: onboardingData.length,
             onPageChanged: (index) {
               setState(() => _currentIndex = index);
+
+              // Show the "Get Started" button after a delay when the last page is reached
+              if (index == onboardingData.length - 1) {
+                Future.delayed(const Duration(seconds: 1), () {
+                  if (mounted) {
+                    setState(() {
+                      _showGetStartedButton = true;
+                    });
+                  }
+                });
+              } else {
+                setState(() {
+                  _showGetStartedButton = false;
+                });
+              }
             },
             itemBuilder: (context, index) {
               final data = onboardingData[index];
@@ -113,56 +129,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               );
             },
           ),
-          if (_currentIndex != onboardingData.length - 1)
-            Align(
-              alignment: Alignment.bottomRight, // Align to the bottom-right
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  right: 16.0, // Add some padding from the right
-                  bottom: 16.0, // Add some padding from the bottom
-                ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 30, // Adjust the horizontal padding
-                      vertical: 15, // Adjust the vertical padding
-                    ),
-                    backgroundColor: Colors.blue, // Change the button color
-                    shape: RoundedRectangleBorder(
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24.0), // Lower the dots
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  onboardingData.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 3.0), // Adjust spacing
+                    height: 6.0, // Smaller height
+                    width: _currentIndex == index ? 12.0 : 6.0, // Smaller width
+                    decoration: BoxDecoration(
+                      color: _currentIndex == index ? Colors.blue : Colors.grey,
                       borderRadius:
-                          BorderRadius.circular(20), // Rounded corners
-                    ),
-                  ),
-                  onPressed: () {
-                    _controller.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeIn,
-                    );
-                  },
-                  child: const Text(
-                    "Next",
-                    style: TextStyle(
-                      fontSize: 18, // Adjust the font size
-                      color: Colors.white, // Change the text color
+                          BorderRadius.circular(3.0), // Smaller radius
                     ),
                   ),
                 ),
               ),
             ),
-          if (_currentIndex == onboardingData.length - 1)
+          ),
+          if (_showGetStartedButton)
             Align(
-              alignment: Alignment.bottomCenter, // Align to the bottom-center
+              alignment: Alignment.bottomCenter,
               child: Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 32.0, // Add some padding from the bottom
-                ),
+                padding:
+                    const EdgeInsets.only(bottom: 70.0), // Position above dots
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 30,
                       vertical: 15,
                     ),
-                    backgroundColor: Colors.green, // Change the button color
+                    backgroundColor: Colors.green, // Button color
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
