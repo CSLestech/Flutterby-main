@@ -114,64 +114,70 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             },
           ),
           if (_currentIndex != onboardingData.length - 1)
-            Positioned(
-              top:
-                  650, // Adjust this value to move the "Next" button vertically
-              left:
-                  380, // Adjust this value to move the "Next" button horizontally
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30, // Adjust the horizontal padding
-                    vertical: 15, // Adjust the vertical padding
-                  ),
-                  backgroundColor: Colors.blue, // Change the button color
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20), // Rounded corners
-                  ),
+            Align(
+              alignment: Alignment.bottomRight, // Align to the bottom-right
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  right: 16.0, // Add some padding from the right
+                  bottom: 16.0, // Add some padding from the bottom
                 ),
-                onPressed: () {
-                  _controller.nextPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeIn,
-                  );
-                },
-                child: const Text(
-                  "Next",
-                  style: TextStyle(
-                    fontSize: 18, // Adjust the font size
-                    color: Colors.white, // Change the text color
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30, // Adjust the horizontal padding
+                      vertical: 15, // Adjust the vertical padding
+                    ),
+                    backgroundColor: Colors.blue, // Change the button color
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(20), // Rounded corners
+                    ),
+                  ),
+                  onPressed: () {
+                    _controller.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeIn,
+                    );
+                  },
+                  child: const Text(
+                    "Next",
+                    style: TextStyle(
+                      fontSize: 18, // Adjust the font size
+                      color: Colors.white, // Change the text color
+                    ),
                   ),
                 ),
               ),
             ),
           if (_currentIndex == onboardingData.length - 1)
-            Positioned(
-              top:
-                  645, // Adjust this value to move the "Get Started" button vertically
-              left:
-                  169, // Adjust this value to move the "Get Started" button horizontally
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 15,
-                  ),
-                  backgroundColor: Colors.green, // Change the button color
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+            Align(
+              alignment: Alignment.bottomCenter, // Align to the bottom-center
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  bottom: 32.0, // Add some padding from the bottom
                 ),
-                onPressed: () async {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('onboarding_complete', true);
-                  widget.onFinish();
-                },
-                child: const Text(
-                  "Get Started",
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 30,
+                      vertical: 15,
+                    ),
+                    backgroundColor: Colors.green, // Change the button color
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  onPressed: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('onboarding_complete', true);
+                    widget.onFinish();
+                  },
+                  child: const Text(
+                    "Get Started",
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
