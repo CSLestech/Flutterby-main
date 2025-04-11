@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart'; // Import permission_handler
 
 import 'about_page.dart';
 import 'history_page.dart';
@@ -130,6 +131,42 @@ class HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     _loadHistory();
+    _requestStoragePermission(); // Request storage permission when HomeView initializes
+  }
+
+  Future<void> _requestStoragePermission() async {
+    final status = await Permission.storage.request();
+    if (status.isDenied || status.isPermanentlyDenied) {
+      // Show a dialog if permission is denied
+      _showPermissionDialog();
+    } else if (status.isGranted) {
+      debugPrint('Storage permission granted.');
+    }
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: const Text(
+            'Storage permission is required to access files. Please enable it in the app settings.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              openAppSettings(); // Open app settings
+            },
+            child: const Text('Settings'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -318,8 +355,8 @@ class HomeViewState extends State<HomeView> {
                 enlargeCenterPage: true,
                 viewportFraction: 0.9, // Adjust the width of the carousel items
                 aspectRatio: 16 / 9,
-                autoPlayInterval: const Duration(seconds: 3),
-                autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                autoPlayInterval: const Duration(seconds: 2),
+                autoPlayAnimationDuration: const Duration(milliseconds: 400),
                 autoPlayCurve: Curves.fastOutSlowIn,
               ),
               items: _carouselImages.map((imagePath) {
@@ -365,21 +402,62 @@ class HomeViewState extends State<HomeView> {
             if (_pickedImage != null)
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 300,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.file(
-                      _pickedImage!,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Text("Failed to load image."),
-                        );
-                      },
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      height: 300,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.file(
+                          _pickedImage!,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Text("Failed to load image."),
+                            );
+                          },
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 10),
+                    if (_prediction != null)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _prediction!["icon"],
+                              color: _prediction!["color"],
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _prediction!["text"],
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: _prediction!["color"],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               )
             else
@@ -387,32 +465,6 @@ class HomeViewState extends State<HomeView> {
                 child: Text("No image selected."),
               ),
             const SizedBox(height: 5),
-            if (_prediction != null)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _prediction!["icon"],
-                        color: _prediction!["color"],
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _prediction!["text"],
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: _prediction!["color"],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
           ],
         ),
       ),
