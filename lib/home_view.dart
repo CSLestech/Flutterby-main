@@ -9,7 +9,6 @@ import 'package:permission_handler/permission_handler.dart'; // Import permissio
 
 import 'about_page.dart';
 import 'history_page.dart';
-import 'help_page.dart';
 
 void main() {
   runApp(const MyApp());
