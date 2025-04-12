@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart'; // Import permissio
 
 import 'about_page.dart';
 import 'history_page.dart';
+import 'help_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -42,7 +43,7 @@ class _LoadingScreenWrapperState extends State<LoadingScreenWrapper> {
 
   Future<void> _navigateToHome() async {
     await Future.delayed(const Duration(seconds: 15)); // Adjust the time here
-    if (!mounted) return;
+    if (!mounted) return; // Ensure the widget is still mounted
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const HomeView()),
@@ -87,17 +88,39 @@ class HomeView extends StatefulWidget {
   HomeViewState createState() => HomeViewState();
 }
 
-class HomeViewState extends State<HomeView> {
+class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   File? _pickedImage;
   Map<String, dynamic>? _prediction;
   final ImagePicker _picker = ImagePicker();
   final List<Map<String, dynamic>> _history = [];
   int _selectedIndex = 0;
+  bool _isPermissionDialogVisible = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Add observer
     _loadHistory(); // Load history when the app starts
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Remove observer
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.resumed) {
+      // Check storage permission when the app resumes
+      if (_isPermissionDialogVisible) {
+        final status = await Permission.storage.status;
+        if (status.isGranted && mounted) {
+          Navigator.of(context).pop(); // Dismiss the dialog
+          _isPermissionDialogVisible = false;
+        }
+      }
+    }
   }
 
   Future<void> _loadHistory() async {
@@ -128,6 +151,7 @@ class HomeViewState extends State<HomeView> {
             });
           },
         ),
+        Container(), // Placeholder for the camera button
         AboutPage(
           onBackToHome: () {
             setState(() {
@@ -145,12 +169,12 @@ class HomeViewState extends State<HomeView> {
       ];
 
   Future<void> _pickImage(ImageSource source) async {
-    // Check if the source is gallery and request storage permission
     if (source == ImageSource.gallery) {
+      // Check and request storage permission
       final status = await Permission.storage.request();
       if (status.isDenied || status.isPermanentlyDenied) {
         _showPermissionDialog();
-        return; // Exit the method if permission is not granted
+        return; // Exit if permission is not granted
       } else if (status.isGranted) {
         debugPrint('Storage permission granted.');
       }
@@ -160,8 +184,12 @@ class HomeViewState extends State<HomeView> {
     if (pickedFile != null) {
       final String fileExtension =
           pickedFile.path.split('.').last.toLowerCase();
-      if (fileExtension != 'jpg' && fileExtension != 'png') {
+      const List<String> allowedExtensions = ['jpg', 'png']; // Allowed formats
+
+      if (!allowedExtensions.contains(fileExtension)) {
+        // Handle invalid file format
         setState(() {
+          _pickedImage = null; // Clear any previously selected image
           _prediction = {
             "text": "Invalid file format. Only JPG and PNG are allowed.",
             "icon": Icons.error,
@@ -213,6 +241,14 @@ class HomeViewState extends State<HomeView> {
       _prediction = prediction; // Update the prediction
       _addToHistory(prediction); // Add the prediction to history
     });
+
+    // Clear the home page after 60 seconds
+    Future.delayed(const Duration(seconds: 30), () {
+      setState(() {
+        _pickedImage = null;
+        _prediction = null;
+      });
+    });
   }
 
   void _addToHistory(Map<String, dynamic> prediction) async {
@@ -220,8 +256,7 @@ class HomeViewState extends State<HomeView> {
 
     setState(() {
       _history.add({
-        "imagePath": _pickedImage
-            ?.path, // Ensure this matches the key used in HistoryPage
+        "imagePath": _pickedImage?.path,
         "prediction": prediction,
         "timestamp": timestamp,
       });
@@ -230,12 +265,14 @@ class HomeViewState extends State<HomeView> {
       }
     });
 
+    // Save history to SharedPreferences
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String encodedHistory = jsonEncode(_history);
     await prefs.setString('history', encodedHistory);
   }
 
   void _showPermissionDialog() {
+    _isPermissionDialogVisible = true;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -246,6 +283,7 @@ class HomeViewState extends State<HomeView> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
+              _isPermissionDialogVisible = false;
             },
             child: const Text('Cancel'),
           ),
@@ -340,24 +378,33 @@ class HomeViewState extends State<HomeView> {
                     ),
                     const SizedBox(height: 10),
                     if (_prediction != null)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _prediction!["icon"],
-                            color: _prediction!["color"],
-                            size: 24,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _prediction!["text"],
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _prediction!["icon"],
                               color: _prediction!["color"],
+                              size: 24,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                _prediction!["text"],
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _prediction!["color"],
+                                ),
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),
@@ -456,21 +503,27 @@ class HomeViewState extends State<HomeView> {
             )
           : null, // No AppBar for other pages
       body: _widgetOptions[_selectedIndex], // Each page handles its own content
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton(
-              onPressed: () {
-                _showImageSourceDialog();
-              },
-              backgroundColor: Colors.purple,
-              child: const Icon(Icons.camera_alt, color: Colors.white),
-            )
-          : null,
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
           splashFactory: NoSplash.splashFactory, // Disable ripple effect
           highlightColor: Colors.transparent, // Disable highlight effect
         ),
         child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white, // Set the background color to blend
+          selectedItemColor: Colors.purple, // Active item color
+          unselectedItemColor: Colors.grey, // Inactive item color
+          currentIndex: _selectedIndex,
+          onTap: (int index) {
+            if (index == 2) {
+              // Handle camera button tap
+              _showImageSourceDialog();
+            } else {
+              setState(() {
+                _selectedIndex = index; // Update the selected index
+              });
+            }
+          },
           items: const <BottomNavigationBarItem>[
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
@@ -481,6 +534,10 @@ class HomeViewState extends State<HomeView> {
               label: 'History',
             ),
             BottomNavigationBarItem(
+              icon: Icon(Icons.camera_alt), // Camera button in the center
+              label: 'Camera',
+            ),
+            BottomNavigationBarItem(
               icon: Icon(Icons.info),
               label: 'About',
             ),
@@ -489,14 +546,6 @@ class HomeViewState extends State<HomeView> {
               label: 'Help',
             ),
           ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Colors.purple,
-          unselectedItemColor: Colors.grey,
-          onTap: (int index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
         ),
       ),
     );
