@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart'; // Import permission_handler
 
 import 'about_page.dart';
-import 'help_page.dart';
 import 'history_page.dart';
 
 void main() {
