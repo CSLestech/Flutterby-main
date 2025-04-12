@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart'; // Import permission_handler
 
 import 'about_page.dart';
+import 'help_page.dart';
 import 'history_page.dart';
 
 void main() {
@@ -94,6 +95,24 @@ class HomeViewState extends State<HomeView> {
   final List<Map<String, dynamic>> _history = [];
   int _selectedIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory(); // Load history when the app starts
+  }
+
+  Future<void> _loadHistory() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? encodedHistory = prefs.getString('history');
+    if (encodedHistory != null) {
+      setState(() {
+        _history.clear();
+        _history.addAll(
+            List<Map<String, dynamic>>.from(jsonDecode(encodedHistory)));
+      });
+    }
+  }
+
   final List<String> _carouselImages = [
     'images/ui/sample.jpg',
     'images/ui/chick2.png',
@@ -126,18 +145,11 @@ class HomeViewState extends State<HomeView> {
         ),
       ];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadHistory();
-  }
-
   Future<void> _pickImage(ImageSource source) async {
     // Check if the source is gallery and request storage permission
     if (source == ImageSource.gallery) {
       final status = await Permission.storage.request();
       if (status.isDenied || status.isPermanentlyDenied) {
-        // Show a dialog if permission is denied
         _showPermissionDialog();
         return; // Exit the method if permission is not granted
       } else if (status.isGranted) {
@@ -145,12 +157,8 @@ class HomeViewState extends State<HomeView> {
       }
     }
 
-    // Proceed with picking the image
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
-      log("Picked file path: ${pickedFile.path}");
-
-      // Validate file format
       final String fileExtension =
           pickedFile.path.split('.').last.toLowerCase();
       if (fileExtension != 'jpg' && fileExtension != 'png') {
@@ -209,19 +217,23 @@ class HomeViewState extends State<HomeView> {
   }
 
   void _addToHistory(Map<String, dynamic> prediction) async {
-    // Add the prediction to the history list
+    final String timestamp = DateTime.now().toString();
+
     setState(() {
-      _history.add(prediction);
+      _history.add({
+        "imagePath": _pickedImage
+            ?.path, // Ensure this matches the key used in HistoryPage
+        "prediction": prediction,
+        "timestamp": timestamp,
+      });
       if (_history.length > 5) {
         _history.removeAt(0); // Keep only the last 5 entries
       }
     });
 
-    // Save the updated history to SharedPreferences
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String encodedHistory = jsonEncode(_history);
     await prefs.setString('history', encodedHistory);
-    log("History updated: $encodedHistory");
   }
 
   void _showPermissionDialog() {
@@ -249,21 +261,6 @@ class HomeViewState extends State<HomeView> {
     );
   }
 
-  Future<void> _loadHistory() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? encodedHistory = prefs.getString('history');
-    if (encodedHistory != null) {
-      log("Loaded history: $encodedHistory");
-      setState(() {
-        _history.clear();
-        _history.addAll(
-            List<Map<String, dynamic>>.from(jsonDecode(encodedHistory)));
-      });
-    } else {
-      log("No history found.");
-    }
-  }
-
   Widget _buildHomePage() {
     return SafeArea(
       child: SingleChildScrollView(
@@ -276,22 +273,21 @@ class HomeViewState extends State<HomeView> {
                 height: 200.0,
                 autoPlay: true,
                 enlargeCenterPage: true,
-                viewportFraction: 0.9, // Adjust the width of the carousel items
+                viewportFraction: 0.9,
                 aspectRatio: 16 / 9,
                 autoPlayInterval: const Duration(seconds: 2),
                 autoPlayAnimationDuration: const Duration(milliseconds: 400),
                 autoPlayCurve: Curves.fastOutSlowIn,
               ),
               items: _carouselImages.map((imagePath) {
-                log("Loading image: $imagePath"); // Debug log
+                log("Loading image: $imagePath");
                 return ClipRRect(
-                  borderRadius: BorderRadius.circular(20), // Rounded corners
+                  borderRadius: BorderRadius.circular(20),
                   child: Container(
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(
-                              (0.1 * 255).toInt()), // Fixed to use withAlpha
+                          color: Colors.black.withAlpha((0.1 * 255).toInt()),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         ),
@@ -345,40 +341,24 @@ class HomeViewState extends State<HomeView> {
                     ),
                     const SizedBox(height: 10),
                     if (_prediction != null)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black,
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              _prediction!["icon"],
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _prediction!["icon"],
+                            color: _prediction!["color"],
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _prediction!["text"],
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                               color: _prediction!["color"],
-                              size: 24,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _prediction!["text"],
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: _prediction!["color"],
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                   ],
                 ),
@@ -579,6 +559,121 @@ class HomeViewState extends State<HomeView> {
           ),
         );
       },
+    );
+  }
+}
+
+class HistoryPage extends StatelessWidget {
+  final List<Map<String, dynamic>> history;
+  final VoidCallback onBackToHome;
+
+  const HistoryPage({
+    super.key,
+    required this.history,
+    required this.onBackToHome,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("History"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: onBackToHome,
+        ),
+      ),
+      body: history.isEmpty
+          ? const Center(
+              child: Text(
+                "No history available.",
+                style: TextStyle(fontSize: 18),
+              ),
+            )
+          : ListView.builder(
+              itemCount: history.length,
+              itemBuilder: (context, index) {
+                final entry = history[index];
+                final String? imagePath = entry["imagePath"];
+                final Map<String, dynamic> prediction = entry["prediction"];
+                final String timestamp = entry["timestamp"];
+
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HistoryDetailPage(
+                          imagePath: entry[
+                              "imagePath"], // Ensure this key matches the data structure
+                          prediction: entry["prediction"],
+                          timestamp: entry["timestamp"],
+                        ),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (imagePath != null && File(imagePath).existsSync())
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(10),
+                              ),
+                              child: Image.file(
+                                File(imagePath),
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              "Uploaded on: $timestamp",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  prediction["icon"],
+                                  color: prediction["color"],
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  prediction["text"],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: prediction["color"],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

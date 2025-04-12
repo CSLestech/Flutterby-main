@@ -5,8 +5,11 @@ class HistoryPage extends StatelessWidget {
   final List<Map<String, dynamic>> history;
   final VoidCallback onBackToHome;
 
-  const HistoryPage(
-      {super.key, required this.history, required this.onBackToHome});
+  const HistoryPage({
+    super.key,
+    required this.history,
+    required this.onBackToHome,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +34,7 @@ class HistoryPage extends StatelessWidget {
               itemCount: history.length,
               itemBuilder: (context, index) {
                 final entry = history[index];
-                final String? imagePath = entry["image"];
+                final String? imagePath = entry["imagePath"]; // Fixed key
                 final String timestamp = entry["timestamp"];
 
                 return GestureDetector(
