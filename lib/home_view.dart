@@ -175,8 +175,6 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       if (status.isDenied || status.isPermanentlyDenied) {
         _showPermissionDialog();
         return; // Exit if permission is not granted
-      } else if (status.isGranted) {
-        debugPrint('Storage permission granted.');
       }
     }
 
@@ -187,15 +185,25 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       const List<String> allowedExtensions = ['jpg', 'png']; // Allowed formats
 
       if (!allowedExtensions.contains(fileExtension)) {
-        // Handle invalid file format
-        setState(() {
-          _pickedImage = null; // Clear any previously selected image
-          _prediction = {
-            "text": "Invalid file format. Only JPG and PNG are allowed.",
-            "icon": Icons.error,
-            "color": Colors.grey,
-          };
-        });
+        if (mounted) {
+          // Ensure the widget is still mounted before using context
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Invalid File Format'),
+              content: const Text('Only JPG and PNG file formats are allowed.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+        debugPrint("Invalid file format: $fileExtension");
         return;
       }
 
@@ -243,7 +251,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     });
 
     // Clear the home page after 60 seconds
-    Future.delayed(const Duration(seconds: 30), () {
+    Future.delayed(const Duration(seconds: 10), () {
       setState(() {
         _pickedImage = null;
         _prediction = null;
