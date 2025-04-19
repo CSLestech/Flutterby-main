@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:permission_handler/permission_handler.dart'; // Import permission_handler
+import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import 'about_page.dart';
 import 'history_page.dart';
@@ -96,27 +98,32 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   bool _isPermissionDialogVisible = false;
 
+  final List<String> _carouselImages = [
+    'images/ui/chick.jpg',
+    'images/ui/chick2.png',
+    'images/ui/chickog.png',
+  ];
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // Add observer
-    _loadHistory(); // Load history when the app starts
+    WidgetsBinding.instance.addObserver(this);
+    _loadHistory();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this); // Remove observer
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
-      // Check storage permission when the app resumes
       if (_isPermissionDialogVisible) {
         final status = await Permission.storage.status;
         if (status.isGranted && mounted) {
-          Navigator.of(context).pop(); // Dismiss the dialog
+          Navigator.of(context).pop();
           _isPermissionDialogVisible = false;
         }
       }
@@ -135,46 +142,12 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     }
   }
 
-  final List<String> _carouselImages = [
-    'images/ui/sample.jpg',
-    'images/ui/chick2.png',
-    'images/ui/chickog.png',
-  ];
-
-  List<Widget> get _widgetOptions => <Widget>[
-        _buildHomePage(),
-        HistoryPage(
-          history: _history,
-          onBackToHome: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
-          },
-        ),
-        Container(), // Placeholder for the camera button
-        AboutPage(
-          onBackToHome: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
-          },
-        ),
-        HelpPage(
-          onBackToHome: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
-          },
-        ),
-      ];
-
   Future<void> _pickImage(ImageSource source) async {
     if (source == ImageSource.gallery) {
-      // Check and request storage permission
       final status = await Permission.storage.request();
       if (status.isDenied || status.isPermanentlyDenied) {
         _showPermissionDialog();
-        return; // Exit if permission is not granted
+        return;
       }
     }
 
@@ -182,11 +155,10 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     if (pickedFile != null) {
       final String fileExtension =
           pickedFile.path.split('.').last.toLowerCase();
-      const List<String> allowedExtensions = ['jpg', 'png']; // Allowed formats
+      const List<String> allowedExtensions = ['jpg', 'png'];
 
       if (!allowedExtensions.contains(fileExtension)) {
         if (mounted) {
-          // Ensure the widget is still mounted before using context
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
@@ -195,7 +167,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(context).pop();
                   },
                   child: const Text('OK'),
                 ),
@@ -209,54 +181,112 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
       setState(() {
         _pickedImage = File(pickedFile.path);
-        _prediction = null; // Reset prediction before generating a new one
+        _prediction = null;
       });
 
-      _generateDummyPrediction(); // Generate a prediction after selecting the image
+      await _sendImageToServer(_pickedImage!);
     } else {
       log("No file selected.");
     }
   }
 
-  void _generateDummyPrediction() {
-    final List<Map<String, dynamic>> dummyPredictions = [
-      {
-        "text": "Safe to Eat (Consumable)",
-        "icon": Icons.check_circle,
-        "color": Colors.green,
-      },
-      {
-        "text": "Consume with Risk (Half-Consumable)",
-        "icon": Icons.warning,
-        "color": Colors.orange,
-      },
-      {
-        "text": "Not Safe to Eat (Not Consumable)",
-        "icon": Icons.cancel,
-        "color": Colors.red,
-      },
-      {
-        "text": "Invalid: Not a chicken breast.",
-        "icon": Icons.error,
-        "color": Colors.grey,
-      },
-    ];
+  Future<void> _sendImageToServer(File imageFile) async {
+    final uri = Uri.parse("http://192.168.1.9:5000/predict");
 
-    final Map<String, dynamic> prediction = dummyPredictions[
-        (DateTime.now().millisecondsSinceEpoch % dummyPredictions.length)];
+    final request = http.MultipartRequest('POST', uri)
+      ..files.add(
+        await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
 
-    setState(() {
-      _prediction = prediction; // Update the prediction
-      _addToHistory(prediction); // Add the prediction to history
-    });
+    try {
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
-    // Clear the home page after 60 seconds
-    Future.delayed(const Duration(seconds: 10), () {
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          // Only update the UI with the image if it is a chicken breast
+          _pickedImage = imageFile;
+          _prediction = {
+            "text": data['prediction'],
+            "icon": _getPredictionIcon(data['prediction']),
+            "color": _getPredictionColor(data['prediction']),
+          };
+          _addToHistory(_prediction!);
+        });
+      } else if (response.statusCode == 400) {
+        final data = json.decode(response.body);
+        if (data['error'] != null) {
+          _showErrorDialog(data['error']); // Show error pop-up
+        }
+      } else {
+        debugPrint('Error: ${response.statusCode}');
+        setState(() {
+          _prediction = {
+            "text": "Error: Unable to get prediction",
+            "icon": Icons.error,
+            "color": Colors.red,
+          };
+        });
+      }
+    } catch (e) {
+      debugPrint('Error: $e');
       setState(() {
-        _pickedImage = null;
-        _prediction = null;
+        _prediction = {
+          "text": "Error: Unable to connect to server",
+          "icon": Icons.error,
+          "color": Colors.red,
+        };
       });
-    });
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getPredictionIcon(String prediction) {
+    switch (prediction) {
+      case "Consumable":
+        return Icons.check_circle;
+      case "Half-Consumable":
+        return Icons.warning;
+      case "Not Consumable":
+        return Icons.cancel;
+      default:
+        return Icons.error;
+    }
+  }
+
+  Color _getPredictionColor(String prediction) {
+    switch (prediction) {
+      case "Consumable":
+        return Colors.green;
+      case "Half-Consumable":
+        return Colors.orange;
+      case "Not Consumable":
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 
   void _addToHistory(Map<String, dynamic> prediction) async {
@@ -269,11 +299,10 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
         "timestamp": timestamp,
       });
       if (_history.length > 5) {
-        _history.removeAt(0); // Keep only the last 5 entries
+        _history.removeAt(0);
       }
     });
 
-    // Save history to SharedPreferences
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String encodedHistory = jsonEncode(_history);
     await prefs.setString('history', encodedHistory);
@@ -297,7 +326,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
           ),
           TextButton(
             onPressed: () {
-              openAppSettings(); // Open app settings
+              openAppSettings();
             },
             child: const Text('Settings'),
           ),
@@ -305,6 +334,33 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       ),
     );
   }
+
+  List<Widget> get _widgetOptions => <Widget>[
+        _buildHomePage(),
+        HistoryPage(
+          history: _history,
+          onBackToHome: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        ),
+        Container(),
+        AboutPage(
+          onBackToHome: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        ),
+        HelpPage(
+          onBackToHome: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        ),
+      ];
 
   Widget _buildHomePage() {
     return SafeArea(
@@ -451,7 +507,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     return SizedBox(
       height: 150,
       child: ListView.builder(
-        scrollDirection: Axis.horizontal, // Enables horizontal scrolling
+        scrollDirection: Axis.horizontal,
         itemCount: features.length,
         itemBuilder: (context, index) {
           final feature = features[index];
@@ -497,38 +553,37 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _selectedIndex == 0 // Show AppBar with back arrow only on Home
+      appBar: _selectedIndex == 0
           ? AppBar(
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () async {
                   final shouldExit = await _showExitConfirmationDialog();
                   if (shouldExit ?? false) {
-                    exit(0); // Exit the app
+                    exit(0);
                   }
                 },
               ),
             )
-          : null, // No AppBar for other pages
-      body: _widgetOptions[_selectedIndex], // Each page handles its own content
+          : null,
+      body: _widgetOptions[_selectedIndex],
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
-          splashFactory: NoSplash.splashFactory, // Disable ripple effect
-          highlightColor: Colors.transparent, // Disable highlight effect
+          splashFactory: NoSplash.splashFactory,
+          highlightColor: Colors.transparent,
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white, // Set the background color to blend
-          selectedItemColor: Colors.purple, // Active item color
-          unselectedItemColor: Colors.grey, // Inactive item color
+          backgroundColor: Colors.white,
+          selectedItemColor: Colors.purple,
+          unselectedItemColor: Colors.grey,
           currentIndex: _selectedIndex,
           onTap: (int index) {
             if (index == 2) {
-              // Handle camera button tap
               _showImageSourceDialog();
             } else {
               setState(() {
-                _selectedIndex = index; // Update the selected index
+                _selectedIndex = index;
               });
             }
           },
@@ -542,7 +597,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               label: 'History',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.camera_alt), // Camera button in the center
+              icon: Icon(Icons.camera_alt),
               label: 'Camera',
             ),
             BottomNavigationBarItem(
@@ -569,13 +624,13 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(false); // Stay in the app
+                Navigator.of(context).pop(false);
               },
               child: const Text("Cancel"),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(true); // Exit the app
+                Navigator.of(context).pop(true);
               },
               child: const Text("Exit"),
             ),
@@ -607,8 +662,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                 title: const Text("Select from Gallery"),
                 onTap: () {
                   Navigator.pop(context);
-                  _pickImage(
-                      ImageSource.gallery); // Permission check happens here
+                  _pickImage(ImageSource.gallery);
                 },
               ),
             ],
@@ -660,8 +714,7 @@ class HistoryPage extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => HistoryDetailPage(
-                          imagePath: entry[
-                              "imagePath"], // Ensure this key matches the data structure
+                          imagePath: entry["imagePath"],
                           prediction: entry["prediction"],
                           timestamp: entry["timestamp"],
                         ),
