@@ -191,7 +191,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   }
 
   Future<void> _sendImageToServer(File imageFile) async {
-    final uri = Uri.parse("http://192.168.1.9:5000/predict");
+    final uri = Uri.parse("http://192.168.140.180:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
