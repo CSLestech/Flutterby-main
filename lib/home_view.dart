@@ -786,21 +786,45 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: const Color(0xFFF3E5AB), // Warm cream background
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          titleTextStyle: const TextStyle(
+            color: Color(0xFF3E2C1C),
+            fontFamily: "Garamond",
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
           title: const Text("Select Image Source"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.camera),
-                title: const Text("Take a Picture"),
+                leading: const Icon(Icons.camera, color: Color(0xFF3E2C1C)),
+                title: const Text(
+                  "Take a Picture",
+                  style: TextStyle(
+                    color: Color(0xFF3E2C1C),
+                    fontFamily: "Garamond",
+                    fontSize: 16,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_album),
-                title: const Text("Select from Gallery"),
+                leading:
+                    const Icon(Icons.photo_album, color: Color(0xFF3E2C1C)),
+                title: const Text(
+                  "Select from Gallery",
+                  style: TextStyle(
+                    color: Color(0xFF3E2C1C),
+                    fontFamily: "Garamond",
+                    fontSize: 16,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
@@ -828,6 +852,16 @@ class HistoryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor:
+            const Color(0xFF3E2C1C), // Deep warm brown - same as About page
+        elevation: 4,
+        iconTheme: const IconThemeData(color: Color(0xFFF3E5AB)), // Warm accent
+        titleTextStyle: const TextStyle(
+          color: Color(0xFFF3E5AB),
+          fontFamily: 'Garamond',
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+        ),
         title: const Text("History"),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
