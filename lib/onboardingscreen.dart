@@ -58,18 +58,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<Map<String, String>> onboardingData = [
     {
-      "image": "assets/scan.png",
+      "image": "images/ui/scan.png",
       "title": "Scan & Classify",
       "description":
           "Snap a photo of chicken meat, and let the system analyze its consumability!"
     },
     {
-      "image": "assets/results.png",
+      "image": "images/ui/results.png",
       "title": "Get Clear Results",
       "description": "Classified into: Safe, Risky, or Not Consumable."
     },
     {
-      "image": "assets/food_safety.png",
+      "image": "images/ui/food_safety.png",
       "title": "Be Informed",
       "description":
           "Be aware and make better decisions by checking the quality before cooking or eating."
