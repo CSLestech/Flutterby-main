@@ -389,7 +389,14 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
   List<Widget> get _widgetOptions => <Widget>[
         _buildHomePage(),
-        Container(),
+        HistoryPage(
+          history: _history,
+          onBackToHome: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        ),
         AboutPage(
           onBackToHome: () {
             setState(() {
@@ -660,12 +667,22 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               const IconThemeData(size: 24), // Standard unselected size
           currentIndex: _selectedIndex,
           onTap: (int index) {
+            // Special handling for camera button (index 2)
             if (index == 2) {
-              // Handle camera button tap
               _showImageSourceDialog();
-            } else {
+              // Don't update _selectedIndex for camera button
+            }
+            // Adjust the index for items after the camera button
+            else if (index > 2) {
               setState(() {
-                _selectedIndex = index; // Update the selected index
+                // Map navigation indices 3 and 4 to widget indices 2 and 3
+                _selectedIndex = index - 1;
+              });
+            }
+            // Normal handling for indices 0 and 1
+            else {
+              setState(() {
+                _selectedIndex = index;
               });
             }
           },
@@ -704,7 +721,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
             ),
             BottomNavigationBarItem(
               icon: AnimatedScale(
-                scale: _selectedIndex == 4 ? 1.2 : 1.0,
+                scale: _selectedIndex == 3 ? 1.2 : 1.0,
                 duration: const Duration(milliseconds: 300),
                 child: const Icon(Icons.help),
               ),
@@ -817,96 +834,99 @@ class HistoryPage extends StatelessWidget {
           onPressed: onBackToHome,
         ),
       ),
-      body: history.isEmpty
-          ? const Center(
-              child: Text(
-                "No history available.",
-                style: TextStyle(fontSize: 18),
-              ),
-            )
-          : ListView.builder(
-              itemCount: history.length,
-              itemBuilder: (context, index) {
-                final entry = history[index];
-                final String? imagePath = entry["imagePath"];
-                final Map<String, dynamic> prediction = entry["prediction"];
-                final String timestamp = entry["timestamp"];
+      body: BackgroundWrapper(
+        child: history.isEmpty
+            ? const Center(
+                child: Text(
+                  "No history available.",
+                  style: TextStyle(fontSize: 18),
+                ),
+              )
+            : ListView.builder(
+                itemCount: history.length,
+                itemBuilder: (context, index) {
+                  final entry = history[index];
+                  final String? imagePath = entry["imagePath"];
+                  final Map<String, dynamic> prediction = entry["prediction"];
+                  final String timestamp = entry["timestamp"];
 
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => HistoryDetailPage(
-                          imagePath: entry["imagePath"],
-                          prediction: entry["prediction"],
-                          timestamp: entry["timestamp"],
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => HistoryDetailPage(
+                            imagePath: entry["imagePath"],
+                            prediction: entry["prediction"],
+                            timestamp: entry["timestamp"],
+                          ),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            if (imagePath != null &&
+                                File(imagePath).existsSync())
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(10),
+                                ),
+                                child: Image.file(
+                                  File(imagePath),
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                "Uploaded on: $timestamp",
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    prediction["icon"],
+                                    color: prediction["color"],
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    prediction["text"],
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: prediction["color"],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          if (imagePath != null && File(imagePath).existsSync())
-                            ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(10),
-                              ),
-                              child: Image.file(
-                                File(imagePath),
-                                width: double.infinity,
-                                height: 200,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              "Uploaded on: $timestamp",
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  prediction["icon"],
-                                  color: prediction["color"],
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  prediction["text"],
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: prediction["color"],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
+      ),
     );
   }
 }
