@@ -103,7 +103,7 @@ class LoadingScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/images/chick2.png',
+                'images/chick2.png',
                 height: 150,
               ),
               const SizedBox(height: 20),
@@ -597,11 +597,12 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _selectedIndex == 0
+      appBar: _selectedIndex == 0 // Show AppBar with back arrow only on Home
           ? AppBar(
-              backgroundColor: const Color(0xFF3E2C1C),
+              backgroundColor: const Color(0xFF3E2C1C), // Deep warm brown
               elevation: 4,
-              iconTheme: const IconThemeData(color: Color(0xFFF3E5AB)),
+              iconTheme:
+                  const IconThemeData(color: Color(0xFFF3E5AB)), // Warm accent
               titleTextStyle: const TextStyle(
                 color: Color(0xFFF3E5AB),
                 fontFamily: 'Garamond',
@@ -614,54 +615,99 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                 onPressed: () async {
                   final shouldExit = await _showExitConfirmationDialog();
                   if (shouldExit ?? false) {
-                    exit(0);
+                    exit(0); // Exit the app
                   }
                 },
               ),
             )
-          : null,
+          : null, // No AppBar for other pages
       body: BackgroundWrapper(
-        child: _widgetOptions[_selectedIndex],
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.1, 0.05),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: _widgetOptions[_selectedIndex],
+        ),
       ),
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
-          splashFactory: NoSplash.splashFactory,
-          highlightColor: Colors.transparent,
+          splashFactory: NoSplash.splashFactory, // Disable ripple effect
+          highlightColor: Colors.transparent, // Disable highlight effect
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
-          backgroundColor: const Color.fromARGB(255, 194, 184, 146),
-          selectedItemColor: const Color.fromARGB(255, 98, 72, 46),
-          unselectedItemColor: Colors.black.withAlpha(77),
+          backgroundColor:
+              const Color.fromARGB(255, 194, 184, 146), // Warm cream background
+          selectedItemColor: const Color.fromARGB(
+              255, 98, 72, 46), // Inactive item: soft brown
+          unselectedItemColor: Colors.black
+              .withAlpha(77), // ~30% opacity // Active item: dark brown
+          selectedIconTheme:
+              const IconThemeData(size: 28), // Highlight selected icon
+          unselectedIconTheme:
+              const IconThemeData(size: 24), // Standard unselected size
           currentIndex: _selectedIndex,
           onTap: (int index) {
             if (index == 2) {
+              // Handle camera button tap
               _showImageSourceDialog();
             } else {
               setState(() {
-                _selectedIndex = index;
+                _selectedIndex = index; // Update the selected index
               });
             }
           },
-          items: const <BottomNavigationBarItem>[
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home),
+              icon: AnimatedScale(
+                scale: _selectedIndex == 0 ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: const Icon(Icons.home),
+              ),
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history),
+              icon: AnimatedScale(
+                scale: _selectedIndex == 1 ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: const Icon(Icons.history),
+              ),
               label: 'History',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.camera_alt),
+              icon: AnimatedScale(
+                scale: _selectedIndex == 2 ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: const Icon(Icons.camera_alt),
+              ),
               label: 'Camera',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.info),
+              icon: AnimatedScale(
+                scale: _selectedIndex == 3 ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: const Icon(Icons.info),
+              ),
               label: 'About',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.help),
+              icon: AnimatedScale(
+                scale: _selectedIndex == 4 ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: const Icon(Icons.help),
+              ),
               label: 'Help',
             ),
           ],
