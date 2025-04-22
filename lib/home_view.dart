@@ -457,7 +457,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.purple,
+                color: Color.fromARGB(255, 128, 94, 2),
               ),
             ),
             const SizedBox(height: 10),
@@ -573,7 +573,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.purple,
+                        color: Color.fromARGB(255, 128, 94, 2),
                       ),
                     ),
                     const SizedBox(height: 8),
