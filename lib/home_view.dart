@@ -131,6 +131,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   final ImagePicker _picker = ImagePicker();
   final List<Map<String, dynamic>> _history = [];
   int _selectedIndex = 0;
+  int _navigationIndex = 0; // Track the current navigation bar index
   bool _isPermissionDialogVisible = false;
 
   // 4. Updated Carousel Images
@@ -227,7 +228,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   }
 
   Future<void> _sendImageToServer(File imageFile) async {
-    final uri = Uri.parse("http://192.168.0.108:5000/predict");
+    final uri = Uri.parse("http://192.168.1.10:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
@@ -394,6 +395,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
           onBackToHome: () {
             setState(() {
               _selectedIndex = 0;
+              _navigationIndex = 0; // Add this line
             });
           },
         ),
@@ -401,6 +403,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
           onBackToHome: () {
             setState(() {
               _selectedIndex = 0;
+              _navigationIndex = 0; // Add this line
             });
           },
         ),
@@ -408,6 +411,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
           onBackToHome: () {
             setState(() {
               _selectedIndex = 0;
+              _navigationIndex = 0; // Add this line
             });
           },
         ),
@@ -665,8 +669,13 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               const IconThemeData(size: 28), // Highlight selected icon
           unselectedIconTheme:
               const IconThemeData(size: 24), // Standard unselected size
-          currentIndex: _selectedIndex,
+          currentIndex: _navigationIndex,
           onTap: (int index) {
+            setState(() {
+              _navigationIndex =
+                  index; // Keep track of the actual navigation index
+            });
+
             // Special handling for camera button (index 2)
             if (index == 2) {
               _showImageSourceDialog();
@@ -675,8 +684,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
             // Adjust the index for items after the camera button
             else if (index > 2) {
               setState(() {
-                // Map navigation indices 3 and 4 to widget indices 2 and 3
-                _selectedIndex = index - 1;
+                _selectedIndex = index - 1; // Map to widget index
               });
             }
             // Normal handling for indices 0 and 1
@@ -689,7 +697,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
           items: [
             BottomNavigationBarItem(
               icon: AnimatedScale(
-                scale: _selectedIndex == 0 ? 1.2 : 1.0,
+                scale: _navigationIndex == 0 ? 1.2 : 1.0,
                 duration: const Duration(milliseconds: 300),
                 child: const Icon(Icons.home),
               ),
@@ -697,7 +705,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
             ),
             BottomNavigationBarItem(
               icon: AnimatedScale(
-                scale: _selectedIndex == 1 ? 1.2 : 1.0,
+                scale: _navigationIndex == 1 ? 1.2 : 1.0,
                 duration: const Duration(milliseconds: 300),
                 child: const Icon(Icons.history),
               ),
@@ -705,7 +713,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
             ),
             BottomNavigationBarItem(
               icon: AnimatedScale(
-                scale: _selectedIndex == 2 ? 1.2 : 1.0,
+                scale: _navigationIndex == 2 ? 1.2 : 1.0,
                 duration: const Duration(milliseconds: 300),
                 child: const Icon(Icons.camera_alt),
               ),
@@ -713,7 +721,9 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
             ),
             BottomNavigationBarItem(
               icon: AnimatedScale(
-                scale: _selectedIndex == 3 ? 1.2 : 1.0,
+                scale: _navigationIndex == 3
+                    ? 1.2
+                    : 1.0, // Use navigation index now
                 duration: const Duration(milliseconds: 300),
                 child: const Icon(Icons.info),
               ),
@@ -721,7 +731,9 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
             ),
             BottomNavigationBarItem(
               icon: AnimatedScale(
-                scale: _selectedIndex == 3 ? 1.2 : 1.0,
+                scale: _navigationIndex == 4
+                    ? 1.2
+                    : 1.0, // Use navigation index now
                 duration: const Duration(milliseconds: 300),
                 child: const Icon(Icons.help),
               ),
