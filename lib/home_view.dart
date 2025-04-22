@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:developer' as dev;
 import 'package:check_a_doodle_doo/prediction_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -133,6 +134,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   int _navigationIndex = 0; // Track the current navigation bar index
   bool _isPermissionDialogVisible = false;
+  bool _isLoading = false; // Loading indicator
 
   // 4. Updated Carousel Images
   final List<String> _carouselImages = [
@@ -144,8 +146,8 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _loadHistory();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -168,26 +170,92 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   }
 
   Future<void> _loadHistory() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? encodedHistory = prefs.getString('history');
-    if (encodedHistory != null) {
-      setState(() {
-        _history.clear();
-        _history.addAll(
-            List<Map<String, dynamic>>.from(jsonDecode(encodedHistory)));
-      });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? historyJson = prefs.getString('history');
+
+      if (historyJson != null) {
+        final List<dynamic> decoded = jsonDecode(historyJson);
+
+        setState(() {
+          _history.clear();
+          _history.addAll(decoded.map((item) {
+            final Map<String, dynamic> historyItem = {};
+
+            // Text
+            historyItem['text'] = item['text'];
+
+            // Icon - convert from integer code back to IconData
+            if (item.containsKey('iconCode')) {
+              historyItem['icon'] = IconData(
+                item['iconCode'],
+                fontFamily: item['iconFontFamily'] ?? 'MaterialIcons',
+                fontPackage: null,
+              );
+            }
+
+            // Color - convert from integer back to Color
+            if (item.containsKey('colorARGB')) {
+              historyItem['color'] = Color(item['colorARGB']);
+            } else if (item.containsKey('colorValue')) {
+              // Handle legacy format (for backward compatibility)
+              historyItem['color'] = Color(item['colorValue']);
+            }
+
+            // Image path
+            historyItem['imagePath'] = item['imagePath'];
+
+            // Timestamp
+            historyItem['timestamp'] = item['timestamp'];
+
+            return historyItem;
+          }).toList());
+        });
+
+        dev.log("Loaded ${_history.length} history items", name: 'HomeView');
+      }
+    } catch (e) {
+      dev.log("Error loading history: $e", name: 'HomeView');
     }
   }
 
   Future<void> _pickImage(ImageSource source) async {
     if (source == ImageSource.gallery) {
-      final status = await Permission.storage.request();
-      if (status.isDenied || status.isPermanentlyDenied) {
-        _showPermissionDialog();
-        return;
+      // Check if permission is already granted
+      final status = await Permission.storage.status;
+      if (status.isDenied) {
+        // Show custom dialog first
+        final bool? shouldProceed = await _showCustomPermissionDialog();
+        if (shouldProceed != true) {
+          return; // User canceled
+        }
+        // Now request actual permission
+        final permissionStatus = await Permission.storage.request();
+        if (permissionStatus.isDenied || permissionStatus.isPermanentlyDenied) {
+          _showPermissionDialog();
+          return;
+        }
+      }
+    } else if (source == ImageSource.camera) {
+      // For camera permission
+      final cameraStatus = await Permission.camera.status;
+      if (cameraStatus.isDenied) {
+        // Show custom dialog first
+        final bool? shouldProceed =
+            await _showCustomPermissionDialog(isCamera: true);
+        if (shouldProceed != true) {
+          return; // User canceled
+        }
+        // Now request actual permission
+        final permissionStatus = await Permission.camera.request();
+        if (permissionStatus.isDenied || permissionStatus.isPermanentlyDenied) {
+          _showPermissionDialog(isCamera: true);
+          return;
+        }
       }
     }
 
+    // Rest of your image picking code
     final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       final String fileExtension =
@@ -227,7 +295,117 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     }
   }
 
+  // Custom pre-permission dialog
+  Future<bool?> _showCustomPermissionDialog({bool isCamera = false}) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFF3E5AB), // Warm cream background
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titleTextStyle: const TextStyle(
+          color: Color(0xFF3E2C1C),
+          fontFamily: "Garamond",
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        contentTextStyle: const TextStyle(
+          color: Color(0xFF3E2C1C),
+          fontFamily: "Garamond",
+          fontSize: 16,
+        ),
+        title: Text(isCamera ? 'Camera Access' : 'Gallery Access'),
+        content: Text(isCamera
+            ? 'This app needs camera access to take photos for analysis.'
+            : 'This app needs storage permission to access your gallery.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Not Now',
+              style: TextStyle(
+                color: Color(0xFF3E2C1C),
+                fontFamily: "Garamond",
+                fontSize: 16,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(
+              'Continue',
+              style: TextStyle(
+                color: Color(0xFF3E2C1C),
+                fontFamily: "Garamond",
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Update existing permission dialog to handle both storage and camera
+  void _showPermissionDialog({bool isCamera = false}) {
+    _isPermissionDialogVisible = true;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFF3E5AB), // Warm cream background
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titleTextStyle: const TextStyle(
+          color: Color(0xFF3E2C1C),
+          fontFamily: "Garamond",
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+        contentTextStyle: const TextStyle(
+          color: Color(0xFF3E2C1C),
+          fontFamily: "Garamond",
+          fontSize: 16,
+        ),
+        title: const Text('Permission Required'),
+        content: Text(isCamera
+            ? 'Camera permission is required to take photos. Please enable it in the app settings.'
+            : 'Storage permission is required to access files. Please enable it in the app settings.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _isPermissionDialogVisible = false;
+            },
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                color: Color(0xFF3E2C1C),
+                fontFamily: "Garamond",
+                fontSize: 16,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              openAppSettings();
+            },
+            child: const Text(
+              'Settings',
+              style: TextStyle(
+                color: Color(0xFF3E2C1C),
+                fontFamily: "Garamond",
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _sendImageToServer(File imageFile) async {
+    setState(() {
+      _isLoading = true; // Show loading indicator
+    });
+
     final uri = Uri.parse("http://192.168.1.10:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
@@ -243,58 +421,63 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
+      // Hide loading indicator regardless of result
+      setState(() {
+        _isLoading = false;
+      });
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final prediction = {
           "text": data['prediction'],
           "icon": _getPredictionIcon(data['prediction']),
           "color": _getPredictionColor(data['prediction']),
+          "imagePath": imageFile.path,
+          "timestamp": DateTime.now().toString(),
         };
 
-        final String timestamp = DateTime.now().toString();
-
-        // Add to history
-        setState(() {
-          _history.add({
-            "imagePath": imageFile.path,
-            "prediction": prediction,
-            "timestamp": timestamp,
-          });
-          if (_history.length > 5) {
-            _history.removeAt(0);
-          }
+        // Save to history
+        _addToHistory({
+          "text": prediction["text"],
+          "icon": prediction["icon"],
+          "color": prediction["color"],
+          "imagePath": imageFile.path,
+          "timestamp": DateTime.now().toString(),
         });
 
-        // Save history to SharedPreferences
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
-        final String encodedHistory = jsonEncode(_history);
-        await prefs.setString('history', encodedHistory);
+        // Navigate to History after showing prediction details
+        setState(() {
+          _navigationIndex = 1; // Set to History tab
+          _selectedIndex = 1;
+        });
 
-        // Redirect to PredictionDetailsScreen
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PredictionDetailsScreen(
-                imagePath: imageFile.path,
-                prediction: prediction,
-                timestamp: timestamp,
-              ),
+        // Immediately navigate to prediction details screen
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PredictionDetailsScreen(
+              imagePath: imageFile.path,
+              prediction: prediction,
+              timestamp: DateTime.now().toString(),
+              onNavigate: (index) {
+                navigateToTab(index);
+              },
             ),
-          );
-        }
-      } else if (response.statusCode == 400) {
-        final data = json.decode(response.body);
-        if (data['error'] != null) {
-          _showErrorDialog(data['error']); // Show error pop-up
-        }
+          ),
+        );
       } else {
-        debugPrint('Unexpected server response: ${response.statusCode}');
-        _showErrorDialog("Unexpected server response");
+        // Handle server error
+        if (!mounted) return;
+        _showErrorDialog('Server error: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error: $e');
-      _showErrorDialog("Unable to connect to server");
+      // Hide loading indicator and show error dialog
+      setState(() {
+        _isLoading = false;
+      });
+      if (!mounted) return;
+      _showErrorDialog('Network error: ${e.toString()}');
     }
   }
 
@@ -302,18 +485,111 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
+        backgroundColor: const Color(0xFFF3E5AB),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Error',
+          style: TextStyle(
+            color: Color(0xFF3E2C1C),
+            fontFamily: "Garamond",
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(
+            color: Color(0xFF3E2C1C),
+            fontFamily: "Garamond",
+            fontSize: 16,
+          ),
+        ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'OK',
+              style: TextStyle(
+                color: Color(0xFF3E2C1C),
+                fontFamily: "Garamond",
+                fontSize: 16,
+              ),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  void _addToHistory(Map<String, dynamic> prediction) {
+    try {
+      // Create a deep copy to avoid reference issues
+      final Map<String, dynamic> historyCopy = {
+        'text': prediction['text'],
+        'icon': prediction['icon'],
+        'color': prediction['color'],
+        'imagePath': prediction['imagePath'],
+        'timestamp': prediction['timestamp'],
+      };
+
+      setState(() {
+        _history.insert(0, historyCopy);
+        if (_history.length > 10) {
+          _history.removeLast(); // Keep only 10 most recent entries
+        }
+      });
+
+      // Now save to persistent storage
+      _saveHistory();
+
+      // Replace print statements with dev.log
+      dev.log("Added to history. Current history size: ${_history.length}",
+          name: 'HomeView');
+      dev.log("Item added: ${prediction['text']}", name: 'HomeView');
+    } catch (e) {
+      dev.log("Error adding to history: $e", name: 'HomeView');
+    }
+  }
+
+  Future<void> _saveHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Convert history to a serializable format
+      final List<Map<String, dynamic>> serializedHistory = _history.map((item) {
+        final Map<String, dynamic> serializedItem = {};
+
+        // Text
+        serializedItem['text'] = item['text'];
+
+        // Icon - convert to integer code
+        if (item['icon'] != null && item['icon'] is IconData) {
+          serializedItem['iconCode'] = (item['icon'] as IconData).codePoint;
+          serializedItem['iconFontFamily'] =
+              (item['icon'] as IconData).fontFamily;
+        }
+
+        // Color - convert to integer (using proper approach instead of deprecated 'value')
+        if (item['color'] != null && item['color'] is Color) {
+          final Color color = item['color'] as Color;
+          serializedItem['colorARGB'] = color.value;
+        }
+
+        // Image path
+        serializedItem['imagePath'] = item['imagePath'];
+
+        // Timestamp
+        serializedItem['timestamp'] = item['timestamp'];
+
+        return serializedItem;
+      }).toList();
+
+      // Save as JSON
+      await prefs.setString('history', jsonEncode(serializedHistory));
+      dev.log("History saved successfully", name: 'HomeView');
+    } catch (e) {
+      dev.log("Error saving history: $e", name: 'HomeView');
+    }
   }
 
   IconData _getPredictionIcon(String prediction) {
@@ -361,31 +637,20 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     await prefs.setString('history', encodedHistory);
   }
 
-  void _showPermissionDialog() {
-    _isPermissionDialogVisible = true;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Permission Required'),
-        content: const Text(
-            'Storage permission is required to access files. Please enable it in the app settings.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _isPermissionDialogVisible = false;
-            },
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              openAppSettings();
-            },
-            child: const Text('Settings'),
-          ),
-        ],
-      ),
-    );
+  void navigateToTab(int index) {
+    if (index == 2) {
+      _showImageSourceDialog();
+    } else if (index > 2) {
+      setState(() {
+        _navigationIndex = index;
+        _selectedIndex = index - 1;
+      });
+    } else {
+      setState(() {
+        _navigationIndex = index;
+        _selectedIndex = index;
+      });
+    }
   }
 
   List<Widget> get _widgetOptions => <Widget>[
@@ -443,9 +708,11 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha((0.1 * 255).toInt()),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+                          color: Colors.black
+                              .withAlpha(26), // Changed from withOpacity(0.1)
+                          spreadRadius: 1,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -567,36 +834,46 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
         itemBuilder: (context, index) {
           final feature = features[index];
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+            child: Container(
+              width: 250,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(
+                    0xFFF3E5AB), // Warm cream background - same as camera dialog
                 borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black
+                        .withAlpha(26), // Changed from withOpacity(0.1)
+                    spreadRadius: 1,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: Container(
-                width: 250,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      feature["title"]!,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 128, 94, 2),
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    feature["title"]!,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: "Garamond",
+                      color: Color(0xFF3E2C1C), // Match text color with dialog
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      feature["description"]!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    feature["description"]!,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: "Garamond",
+                      color: Color(0xFF3E2C1C), // Match text color with dialog
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -632,25 +909,40 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               ),
             )
           : null, // No AppBar for other pages
-      body: BackgroundWrapper(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          switchInCurve: Curves.easeInOut,
-          switchOutCurve: Curves.easeInOut,
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0.1, 0.05),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
+      body: Stack(
+        children: [
+          BackgroundWrapper(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeInOut,
+              switchOutCurve: Curves.easeInOut,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.1, 0.05),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: _widgetOptions[_selectedIndex],
+            ),
+          ),
+          if (_isLoading)
+            Container(
+              color: Colors.black.withAlpha(100),
+              width: double.infinity,
+              height: double.infinity,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFFF3E5AB),
+                ),
               ),
-            );
-          },
-          child: _widgetOptions[_selectedIndex],
-        ),
+            ),
+        ],
       ),
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
@@ -671,28 +963,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               const IconThemeData(size: 24), // Standard unselected size
           currentIndex: _navigationIndex,
           onTap: (int index) {
-            setState(() {
-              _navigationIndex =
-                  index; // Keep track of the actual navigation index
-            });
-
-            // Special handling for camera button (index 2)
-            if (index == 2) {
-              _showImageSourceDialog();
-              // Don't update _selectedIndex for camera button
-            }
-            // Adjust the index for items after the camera button
-            else if (index > 2) {
-              setState(() {
-                _selectedIndex = index - 1; // Map to widget index
-              });
-            }
-            // Normal handling for indices 0 and 1
-            else {
-              setState(() {
-                _selectedIndex = index;
-              });
-            }
+            navigateToTab(index);
           },
           items: [
             BottomNavigationBarItem(

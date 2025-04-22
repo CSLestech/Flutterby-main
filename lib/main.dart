@@ -22,8 +22,18 @@ class CadApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Check-A-Doodle-Doo',
       theme: ThemeData(
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF3E2C1C),
+          elevation: 4,
+          iconTheme: IconThemeData(color: Color(0xFFF3E5AB)),
+          titleTextStyle: TextStyle(
+            color: Color(0xFFF3E5AB),
+            fontFamily: 'Garamond',
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         primarySwatch: Colors.purple,
       ),
       home: const SplashScreen(), // Directly use SplashScreen
