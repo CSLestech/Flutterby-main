@@ -1,0 +1,60 @@
+name: check_a_doodle_doo
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  image_picker: ^1.1.2
+  http: ^1.3.0
+  logger: ^2.5.0
+  carousel_slider: ^5.0.0
+  shared_preferences: ^2.0.15
+  get: ^4.6.5
+  permission_handler: ^11.4.0
+  flutter_launcher_icons: ^0.14.3
+  animated_bottom_navigation_bar: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+    - family: Garamond
+      fonts:
+        - asset: assets/fonts/EbGaramond08Regular-2mWe.ttf
+
+  assets:
+    # Application Logo
+    - assets/images/ui/logo.png
+
+    # Developer images
+    - assets/images/devs/dollano.jpg
+    - assets/images/devs/Enriquez.png
+    - assets/images/devs/Oropesa.png
+    - assets/images/devs/nigg.jpg
+
+    # Carousel images for chicken breast
+    - assets/images/ui/chick.jpg
+    - assets/images/ui/sample.jpg
+    - assets/images/ui/chick2.png
+    - assets/images/ui/chickog.png
+
+    # Onboarding or other icons/images
+    - assets/images/ui/onboarding_bg.jpg
+    - assets/images/ui/onboarding_bg.png
+    - assets/images/ui/main_bg.png
+    - assets/images/ui/scan.png
+    - assets/images/ui/results.png
+    - assets/images/ui/food_safety.png
+
