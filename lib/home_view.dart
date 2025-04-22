@@ -180,7 +180,8 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
         setState(() {
           _history.clear();
           _history.addAll(decoded.map((item) {
-            final Map<String, dynamic> historyItem = {};
+            final Map<String, dynamic> historyItem =
+                Map<String, dynamic>.from({});
 
             // Text
             historyItem['text'] = item['text'];
@@ -196,15 +197,21 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
             // Color - convert from integer back to Color
             if (item.containsKey('colorARGB')) {
-              historyItem['color'] = Color(item['colorARGB']);
+              final int colorInt = item['colorARGB'] as int;
+              historyItem['color'] = Color.fromARGB(
+                (colorInt >> 24) & 0xFF, // Alpha
+                (colorInt >> 16) & 0xFF, // Red
+                (colorInt >> 8) & 0xFF, // Green
+                colorInt & 0xFF, // Blue
+              );
             } else if (item.containsKey('colorValue')) {
               // Handle legacy format (for backward compatibility)
-              final int colorValue = item['colorValue'] as int;
+              final int colorInt = item['colorValue'] as int;
               historyItem['color'] = Color.fromARGB(
-                255, // Full opacity
-                (colorValue >> 16) & 0xFF, // Red
-                (colorValue >> 8) & 0xFF, // Green
-                colorValue & 0xFF, // Blue
+                255, // Full opacity for legacy colors
+                (colorInt >> 16) & 0xFF, // Red
+                (colorInt >> 8) & 0xFF, // Green
+                colorInt & 0xFF, // Blue
               );
             }
 
@@ -578,7 +585,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
         // Color - convert to integer (using proper approach instead of deprecated 'value')
         if (item['color'] != null && item['color'] is Color) {
           final Color color = item['color'] as Color;
-          serializedItem['colorARGB'] = color.value;
+          serializedItem['colorARGB'] = color.toARGB32();
         }
 
         // Image path
