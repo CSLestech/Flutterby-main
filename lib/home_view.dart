@@ -199,7 +199,13 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               historyItem['color'] = Color(item['colorARGB']);
             } else if (item.containsKey('colorValue')) {
               // Handle legacy format (for backward compatibility)
-              historyItem['color'] = Color(item['colorValue']);
+              final int colorValue = item['colorValue'] as int;
+              historyItem['color'] = Color.fromARGB(
+                255, // Full opacity
+                (colorValue >> 16) & 0xFF, // Red
+                (colorValue >> 8) & 0xFF, // Green
+                colorValue & 0xFF, // Blue
+              );
             }
 
             // Image path
