@@ -9,7 +9,7 @@ class AboutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     List<Map<String, String>> members = [
       {
-        'imagePath': 'images/devs/dollano.jpg',
+        'imagePath': 'images/dollano.jpg',
         'name': 'Dollano, Melissa Pola Anthony F.',
       },
       {
