@@ -1,3 +1,4 @@
+import 'package:check_a_doodle_doo/prediction_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 
@@ -42,10 +43,10 @@ class HistoryPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => HistoryDetailPage(
-                          imagePath: imagePath,
+                        builder: (context) => PredictionDetailsScreen(
+                          imagePath: entry["imagePath"],
                           prediction: entry["prediction"],
-                          timestamp: timestamp,
+                          timestamp: entry["timestamp"],
                         ),
                       ),
                     );

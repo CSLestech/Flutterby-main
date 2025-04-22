@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'dart:developer';
+import 'package:check_a_doodle_doo/prediction_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -191,7 +192,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   }
 
   Future<void> _sendImageToServer(File imageFile) async {
-    final uri = Uri.parse("http://192.168.140.180:5000/predict");
+    final uri = Uri.parse("http://192.168.0.108:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
@@ -208,40 +209,56 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        final prediction = {
+          "text": data['prediction'],
+          "icon": _getPredictionIcon(data['prediction']),
+          "color": _getPredictionColor(data['prediction']),
+        };
+
+        final String timestamp = DateTime.now().toString();
+
+        // Add to history
         setState(() {
-          // Only update the UI with the image if it is a chicken breast
-          _pickedImage = imageFile;
-          _prediction = {
-            "text": data['prediction'],
-            "icon": _getPredictionIcon(data['prediction']),
-            "color": _getPredictionColor(data['prediction']),
-          };
-          _addToHistory(_prediction!);
+          _history.add({
+            "imagePath": imageFile.path,
+            "prediction": prediction,
+            "timestamp": timestamp,
+          });
+          if (_history.length > 5) {
+            _history.removeAt(0);
+          }
         });
+
+        // Save history to SharedPreferences
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        final String encodedHistory = jsonEncode(_history);
+        await prefs.setString('history', encodedHistory);
+
+        // Redirect to PredictionDetailsScreen
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PredictionDetailsScreen(
+                imagePath: imageFile.path,
+                prediction: prediction,
+                timestamp: timestamp,
+              ),
+            ),
+          );
+        }
       } else if (response.statusCode == 400) {
         final data = json.decode(response.body);
         if (data['error'] != null) {
           _showErrorDialog(data['error']); // Show error pop-up
         }
       } else {
-        debugPrint('Error: ${response.statusCode}');
-        setState(() {
-          _prediction = {
-            "text": "Error: Unable to get prediction",
-            "icon": Icons.error,
-            "color": Colors.red,
-          };
-        });
+        debugPrint('Unexpected server response: ${response.statusCode}');
+        _showErrorDialog("Unexpected server response");
       }
     } catch (e) {
       debugPrint('Error: $e');
-      setState(() {
-        _prediction = {
-          "text": "Error: Unable to connect to server",
-          "icon": Icons.error,
-          "color": Colors.red,
-        };
-      });
+      _showErrorDialog("Unable to connect to server");
     }
   }
 
@@ -289,7 +306,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     }
   }
 
-  void _addToHistory(Map<String, dynamic> prediction) async {
+  void addToHistory(Map<String, dynamic> prediction) async {
     final String timestamp = DateTime.now().toString();
 
     setState(() {
