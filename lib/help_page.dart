@@ -67,7 +67,7 @@ class HelpPage extends StatelessWidget {
           // Background image
           Positioned.fill(
             child: Image.asset(
-              'assets/images/ui/main_bg.png',
+              'images/ui/main_bg.png',
               fit: BoxFit.cover,
             ),
           ),
@@ -107,23 +107,23 @@ class HelpPage extends StatelessWidget {
 
                     // Help Steps
                     const HelpStep(
-                      'assets/images/help/step1.png',
+                      'images/help/step1.png',
                       "1. Click on the camera icon to take a picture or select an image from the gallery.",
                     ),
                     const HelpStep(
-                      'assets/images/help/step2.png',
+                      'images/help/step2.png',
                       "2. Wait for the application to classify the image.",
                     ),
                     const HelpStep(
-                      'assets/images/help/step3.png',
+                      'images/help/step3.png',
                       "3. View the prediction result displayed on the screen.",
                     ),
                     const HelpStep(
-                      'assets/images/help/step4.png',
+                      'images/help/step4.png',
                       "4. You can view the history of previous predictions by clicking on the history icon.",
                     ),
                     const HelpStep(
-                      'assets/images/help/step5.png',
+                      'images/help/step5.png',
                       "5. For more information about the application, click on the info icon.",
                     ),
                   ],

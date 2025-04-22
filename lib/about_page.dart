@@ -9,15 +9,15 @@ class AboutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     List<Map<String, String>> members = [
       {
-        'imagePath': 'assets/images/devs/dollano.jpg',
+        'imagePath': 'images/devs/dollano.jpg',
         'name': 'Dollano, Melissa Pola Anthony F.',
       },
       {
-        'imagePath': 'assets/images/devs/Enriquez.png',
+        'imagePath': 'images/devs/Enriquez.png',
         'name': 'Enriquez, Leslie Ann E.',
       },
       {
-        'imagePath': 'assets/images/devs/Oropesa.png',
+        'imagePath': 'images/devs/Oropesa.png',
         'name': 'Oropesa, Ernest Marshal M.',
       }
     ];
@@ -50,7 +50,7 @@ class AboutPage extends StatelessWidget {
             // Background Image
             Positioned.fill(
               child: Image.asset(
-                'assets/images/ui/main_bg.png',
+                'images/ui/main_bg.png',
                 fit: BoxFit.cover,
               ),
             ),
