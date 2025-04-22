@@ -59,7 +59,6 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   assets:
-
     # Application Logo
     - images/ui/logo.png
 
@@ -67,7 +66,6 @@ flutter:
     - images/devs/dollano.jpg
     - images/devs/Enriquez.png
     - images/devs/Oropesa.png
-    - images/devs/nigg.jpg
 
     # Carousel images for chicken breast
     - images/ui/chick.jpg
