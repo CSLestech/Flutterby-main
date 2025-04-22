@@ -30,6 +30,38 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// 1. Background Wrapper
+class BackgroundWrapper extends StatelessWidget {
+  final Widget child;
+  final bool showOverlay;
+
+  const BackgroundWrapper({
+    super.key,
+    required this.child,
+    this.showOverlay = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Image.asset(
+            'images/ui/main_bg.png',
+            fit: BoxFit.cover,
+          ),
+        ),
+        if (showOverlay)
+          Container(
+            color: Colors.black.withAlpha(100),
+          ),
+        child,
+      ],
+    );
+  }
+}
+
+// 2. Loading Screen
 class LoadingScreenWrapper extends StatefulWidget {
   const LoadingScreenWrapper({super.key});
 
@@ -45,8 +77,8 @@ class _LoadingScreenWrapperState extends State<LoadingScreenWrapper> {
   }
 
   Future<void> _navigateToHome() async {
-    await Future.delayed(const Duration(seconds: 15)); // Adjust the time here
-    if (!mounted) return; // Ensure the widget is still mounted
+    await Future.delayed(const Duration(seconds: 15));
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => const HomeView()),
@@ -65,19 +97,21 @@ class LoadingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/chick2.png', // Replace with your image path
-              height: 150, // Adjust the size as needed
-            ),
-            const SizedBox(height: 20),
-            const CircularProgressIndicator(
-              color: Colors.purple, // Optional: Customize the color
-            ), // Loading indicator
-          ],
+      body: BackgroundWrapper(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/chick2.png',
+                height: 150,
+              ),
+              const SizedBox(height: 20),
+              const CircularProgressIndicator(
+                color: Color.fromRGBO(128, 94, 2, 1),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -99,10 +133,11 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   bool _isPermissionDialogVisible = false;
 
+  // 4. Updated Carousel Images
   final List<String> _carouselImages = [
-    'images/ui/chick.jpg',
-    'images/ui/chick2.png',
-    'images/ui/chickog.png',
+    'images/ui/scan.png',
+    'images/ui/results.png',
+    'images/ui/food_safety.png',
   ];
 
   @override
@@ -354,14 +389,6 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
   List<Widget> get _widgetOptions => <Widget>[
         _buildHomePage(),
-        HistoryPage(
-          history: _history,
-          onBackToHome: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
-          },
-        ),
         Container(),
         AboutPage(
           onBackToHome: () {
@@ -572,6 +599,16 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     return Scaffold(
       appBar: _selectedIndex == 0
           ? AppBar(
+              backgroundColor: const Color(0xFF3E2C1C),
+              elevation: 4,
+              iconTheme: const IconThemeData(color: Color(0xFFF3E5AB)),
+              titleTextStyle: const TextStyle(
+                color: Color(0xFFF3E5AB),
+                fontFamily: 'Garamond',
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+              title: const Text("Home"),
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () async {
@@ -583,7 +620,9 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               ),
             )
           : null,
-      body: _widgetOptions[_selectedIndex],
+      body: BackgroundWrapper(
+        child: _widgetOptions[_selectedIndex],
+      ),
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
           splashFactory: NoSplash.splashFactory,
@@ -591,9 +630,9 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: Colors.purple,
-          unselectedItemColor: Colors.grey,
+          backgroundColor: const Color.fromARGB(255, 194, 184, 146),
+          selectedItemColor: const Color.fromARGB(255, 98, 72, 46),
+          unselectedItemColor: Colors.black.withAlpha(77),
           currentIndex: _selectedIndex,
           onTap: (int index) {
             if (index == 2) {
@@ -636,20 +675,42 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: const Color(0xFFF3E5AB),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          titleTextStyle: const TextStyle(
+            color: Color(0xFF3E2C1C),
+            fontFamily: "Garamond",
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          contentTextStyle: const TextStyle(
+            color: Color(0xFF3E2C1C),
+            fontFamily: "Garamond",
+            fontSize: 16,
+          ),
           title: const Text("Exit App"),
           content: const Text("Are you sure you want to exit the app?"),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-              child: const Text("Cancel"),
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                ),
+              ),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-              child: const Text("Exit"),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                "Exit",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                ),
+              ),
             ),
           ],
         );

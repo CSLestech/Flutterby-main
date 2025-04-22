@@ -11,7 +11,6 @@ import 'about_page.dart';
 import 'history_page.dart';
 import 'help_page.dart';
 
-
 void main() {
   runApp(const MyApp());
 }
@@ -22,7 +21,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      
       debugShowCheckedModeBanner: false,
       home: const LoadingScreenWrapper(),
     );
@@ -117,7 +115,7 @@ class LoadingScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 const CircularProgressIndicator(
-                  color: Color.fromRGBO(128, 94, 2, 1), 
+                  color: Color.fromRGBO(128, 94, 2, 1),
                 ),
               ],
             ),
@@ -407,7 +405,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Color.fromARGB(255, 128, 94, 2), 
+                color: Color.fromARGB(255, 128, 94, 2),
               ),
             ),
             const SizedBox(height: 10),
@@ -523,7 +521,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 128, 94, 2), 
+                        color: Color.fromARGB(255, 128, 94, 2),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -548,167 +546,173 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _selectedIndex == 0 // Show AppBar with back arrow only on Home
-    ? AppBar(
-        backgroundColor: const Color(0xFF3E2C1C), // Deep warm brown
-        elevation: 4,
-        iconTheme: const IconThemeData(color: Color(0xFFF3E5AB)), // Warm accent
-        titleTextStyle: const TextStyle(
-          color: Color(0xFFF3E5AB),
-          fontFamily: 'Garamond',
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-        ),
-        title: const Text("Home"),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () async {
-            final shouldExit = await _showExitConfirmationDialog();
-            if (shouldExit ?? false) {
-              exit(0); // Exit the app
-            }
-          },
-        ),
-      )
+          ? AppBar(
+              backgroundColor: const Color(0xFF3E2C1C), // Deep warm brown
+              elevation: 4,
+              iconTheme:
+                  const IconThemeData(color: Color(0xFFF3E5AB)), // Warm accent
+              titleTextStyle: const TextStyle(
+                color: Color(0xFFF3E5AB),
+                fontFamily: 'Garamond',
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+              ),
+              title: const Text("Home"),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () async {
+                  final shouldExit = await _showExitConfirmationDialog();
+                  if (shouldExit ?? false) {
+                    exit(0); // Exit the app
+                  }
+                },
+              ),
+            )
           : null, // No AppBar for other pages
       body: BackgroundWrapper(
-  child: AnimatedSwitcher(
-    duration: const Duration(milliseconds: 300),
-    switchInCurve: Curves.easeInOut,
-    switchOutCurve: Curves.easeInOut,
-    transitionBuilder: (Widget child, Animation<double> animation) {
-      return FadeTransition(
-        opacity: animation,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0.1, 0.05),
-            end: Offset.zero,
-          ).animate(animation),
-          child: child,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.1, 0.05),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: _widgetOptions[_selectedIndex],
         ),
-      );
-    },
-    child: _widgetOptions[_selectedIndex],
-  ),
-),
+      ),
 
 // Each page handles its own content
       bottomNavigationBar: Theme(
-  data: Theme.of(context).copyWith(
-    splashFactory: NoSplash.splashFactory, // Disable ripple effect
-    highlightColor: Colors.transparent, // Disable highlight effect
-  ),
-  child: BottomNavigationBar(
-    type: BottomNavigationBarType.fixed,
-    backgroundColor: const Color.fromARGB(255, 194, 184, 146), // Warm cream background
-    selectedItemColor: const Color.fromARGB(255, 98, 72, 46), // Inactive item: soft brown
-    unselectedItemColor: Colors.black.withAlpha(77), // ~30% opacity // Active item: dark brown
-    selectedIconTheme: const IconThemeData(size: 28), // Highlight selected icon
-    unselectedIconTheme: const IconThemeData(size: 24), // Standard unselected size
-    currentIndex: _selectedIndex,
-    onTap: (int index) {
-      if (index == 2) {
-        // Handle camera button tap
-        _showImageSourceDialog();
-      } else {
-        setState(() {
-          _selectedIndex = index; // Update the selected index
-        });
-      }
-    },
-    items: [
-      BottomNavigationBarItem(
-        icon: AnimatedScale(
-          scale: _selectedIndex == 0 ? 1.2 : 1.0,
-          duration: const Duration(milliseconds: 300),
-          child: const Icon(Icons.home),
+        data: Theme.of(context).copyWith(
+          splashFactory: NoSplash.splashFactory, // Disable ripple effect
+          highlightColor: Colors.transparent, // Disable highlight effect
         ),
-        label: 'Home',
-      ),
-      BottomNavigationBarItem(
-        icon: AnimatedScale(
-          scale: _selectedIndex == 1 ? 1.2 : 1.0,
-          duration: const Duration(milliseconds: 300),
-          child: const Icon(Icons.history),
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor:
+              const Color.fromARGB(255, 194, 184, 146), // Warm cream background
+          selectedItemColor: const Color.fromARGB(
+              255, 98, 72, 46), // Inactive item: soft brown
+          unselectedItemColor: Colors.black
+              .withAlpha(77), // ~30% opacity // Active item: dark brown
+          selectedIconTheme:
+              const IconThemeData(size: 28), // Highlight selected icon
+          unselectedIconTheme:
+              const IconThemeData(size: 24), // Standard unselected size
+          currentIndex: _selectedIndex,
+          onTap: (int index) {
+            if (index == 2) {
+              // Handle camera button tap
+              _showImageSourceDialog();
+            } else {
+              setState(() {
+                _selectedIndex = index; // Update the selected index
+              });
+            }
+          },
+          items: [
+            BottomNavigationBarItem(
+              icon: AnimatedScale(
+                scale: _selectedIndex == 0 ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: const Icon(Icons.home),
+              ),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: AnimatedScale(
+                scale: _selectedIndex == 1 ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: const Icon(Icons.history),
+              ),
+              label: 'History',
+            ),
+            BottomNavigationBarItem(
+              icon: AnimatedScale(
+                scale: _selectedIndex == 2 ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: const Icon(Icons.camera_alt),
+              ),
+              label: 'Camera',
+            ),
+            BottomNavigationBarItem(
+              icon: AnimatedScale(
+                scale: _selectedIndex == 3 ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: const Icon(Icons.info),
+              ),
+              label: 'About',
+            ),
+            BottomNavigationBarItem(
+              icon: AnimatedScale(
+                scale: _selectedIndex == 4 ? 1.2 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: const Icon(Icons.help),
+              ),
+              label: 'Help',
+            ),
+          ],
         ),
-        label: 'History',
       ),
-      BottomNavigationBarItem(
-        icon: AnimatedScale(
-          scale: _selectedIndex == 2 ? 1.2 : 1.0,
-          duration: const Duration(milliseconds: 300),
-          child: const Icon(Icons.camera_alt),
-        ),
-        label: 'Camera',
-      ),
-      BottomNavigationBarItem(
-        icon: AnimatedScale(
-          scale: _selectedIndex == 3 ? 1.2 : 1.0,
-          duration: const Duration(milliseconds: 300),
-          child: const Icon(Icons.info),
-        ),
-        label: 'About',
-      ),
-      BottomNavigationBarItem(
-        icon: AnimatedScale(
-          scale: _selectedIndex == 4 ? 1.2 : 1.0,
-          duration: const Duration(milliseconds: 300),
-          child: const Icon(Icons.help),
-        ),
-        label: 'Help',
-      ),
-    ],
-  ),
-),
-
     );
   }
 
   Future<bool?> _showExitConfirmationDialog() async {
-  return showDialog<bool>(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        backgroundColor: const Color(0xFFF3E5AB),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        titleTextStyle: const TextStyle(
-          color: Color(0xFF3E2C1C),
-          fontFamily: "Garamond",
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-        contentTextStyle: const TextStyle(
-          color: Color(0xFF3E2C1C),
-          fontFamily: "Garamond",
-          fontSize: 16,
-        ),
-        title: const Text("Exit App"),
-        content: const Text("Are you sure you want to exit the app?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
-              "Cancel",
-              style: TextStyle(
-                color: Color(0xFF3E2C1C),
-                fontFamily: "Garamond",
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF3E5AB),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          titleTextStyle: const TextStyle(
+            color: Color(0xFF3E2C1C),
+            fontFamily: "Garamond",
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          contentTextStyle: const TextStyle(
+            color: Color(0xFF3E2C1C),
+            fontFamily: "Garamond",
+            fontSize: 16,
+          ),
+          title: const Text("Exit App"),
+          content: const Text("Are you sure you want to exit the app?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                ),
               ),
             ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(
-              "Exit",
-              style: TextStyle(
-                color: Color(0xFF3E2C1C),
-                fontFamily: "Garamond",
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                "Exit",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                ),
               ),
             ),
-          ),
-        ],
-      );
-    },
-  );
-}
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> _showImageSourceDialog() async {
     return showDialog(
@@ -716,7 +720,8 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: const Color(0xFFF3E5AB),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           titleTextStyle: const TextStyle(
             color: Color(0xFF3E2C1C),
             fontFamily: "Garamond",
@@ -747,7 +752,8 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_album, color: Color(0xFF3E2C1C)),
+                leading:
+                    const Icon(Icons.photo_album, color: Color(0xFF3E2C1C)),
                 title: const Text(
                   "Select from Gallery",
                   style: TextStyle(
@@ -782,22 +788,22 @@ class HistoryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-  backgroundColor: const Color(0xFF3E2C1C), // Deep warm brown
-  elevation: 4,
-  iconTheme: const IconThemeData(color: Color(0xFFF3E5AB)), // Light warm accent
-  titleTextStyle: const TextStyle(
-    color: Color(0xFFF3E5AB), // Light warm cream
-    fontFamily: 'Garamond', // Consistent with your chosen font
-    fontSize: 22,
-    fontWeight: FontWeight.w600,
-  ),
-  title: const Text("History"),
-  leading: IconButton(
-    icon: const Icon(Icons.arrow_back),
-    onPressed: onBackToHome,
-  ),
-),
-
+        backgroundColor: const Color(0xFF3E2C1C), // Deep warm brown
+        elevation: 4,
+        iconTheme:
+            const IconThemeData(color: Color(0xFFF3E5AB)), // Light warm accent
+        titleTextStyle: const TextStyle(
+          color: Color(0xFFF3E5AB), // Light warm cream
+          fontFamily: 'Garamond', // Consistent with your chosen font
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+        ),
+        title: const Text("History"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: onBackToHome,
+        ),
+      ),
       body: history.isEmpty
           ? Stack(
               children: [
@@ -858,8 +864,7 @@ class HistoryPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          if (imagePath != null &&
-                              File(imagePath).existsSync())
+                          if (imagePath != null && File(imagePath).existsSync())
                             ClipRRect(
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(10),

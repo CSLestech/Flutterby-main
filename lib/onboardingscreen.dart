@@ -27,18 +27,20 @@ class CadApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: onboardingComplete
-          ? const HomeView() // Navigate directly to HomeView if onboarding is complete
-          : OnboardingScreen(
-              onFinish: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomeView()),
-                );
-              },
-            ),
-    );
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          fontFamily: 'Garamond',
+        ),
+        home: onboardingComplete
+            ? const HomeView() // Navigate directly to HomeView if onboarding is complete
+            : OnboardingScreen(
+                onFinish: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeView()),
+                  );
+                },
+              ));
   }
 }
 
@@ -57,6 +59,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _showGetStartedButton = false;
 
   final List<Map<String, String>> onboardingData = [
+    {
+      "image": "images/ui/logo.png",
+      "title": "Welcome to Check-a-doodle-doo",
+      "description": "Snap, Analyze, and Stay Safe."
+    },
     {
       "image": "images/ui/scan.png",
       "title": "Scan & Classify",
@@ -81,6 +88,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       body: Stack(
         children: [
+          // Background image
+          Positioned.fill(
+            child: Image.asset(
+              'images/ui/onboarding_bg.jpg',
+              fit: BoxFit.cover,
+            ),
+          ),
+
+          // Overlay content
           PageView.builder(
             controller: _controller,
             itemCount: onboardingData.length,
@@ -114,6 +130,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 128, 94, 2),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -122,50 +139,54 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: Text(
                       data["description"]!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Color.fromARGB(255, 125, 100, 0),
+                      ),
                     ),
                   ),
                 ],
               );
             },
           ),
+
+          // Page indicator dots
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 24.0), // Lower the dots
+              padding: const EdgeInsets.only(bottom: 24.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
                   onboardingData.length,
                   (index) => AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 3.0), // Adjust spacing
-                    height: 6.0, // Smaller height
-                    width: _currentIndex == index ? 12.0 : 6.0, // Smaller width
+                    margin: const EdgeInsets.symmetric(horizontal: 3.0),
+                    height: 6.0,
+                    width: _currentIndex == index ? 12.0 : 6.0,
                     decoration: BoxDecoration(
-                      color: _currentIndex == index ? Colors.blue : Colors.grey,
-                      borderRadius:
-                          BorderRadius.circular(3.0), // Smaller radius
+                      color: _currentIndex == index
+                          ? const Color.fromARGB(255, 122, 106, 0)
+                          : Colors.grey[400],
+                      borderRadius: BorderRadius.circular(3.0),
                     ),
                   ),
                 ),
               ),
             ),
           ),
+
+          // Get Started Button
           if (_showGetStartedButton)
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
-                padding:
-                    const EdgeInsets.only(bottom: 70.0), // Position above dots
+                padding: const EdgeInsets.only(bottom: 70.0),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 30,
-                      vertical: 15,
-                    ),
-                    backgroundColor: Colors.green, // Button color
+                        horizontal: 30, vertical: 15),
+                    backgroundColor: const Color.fromARGB(255, 170, 107, 0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -179,12 +200,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     "Get Started",
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.white,
+                      color: Color.fromARGB(255, 255, 255, 255),
                     ),
                   ),
                 ),
               ),
             ),
+
+          // App version text
+          const Positioned(
+            bottom: 10,
+            right: 10,
+            child: Text(
+              "v1.0.0",
+              style: TextStyle(
+                color: Color.fromARGB(179, 186, 174, 0),
+                fontSize: 12,
+              ),
+            ),
+          ),
         ],
       ),
     );
