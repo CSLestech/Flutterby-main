@@ -292,6 +292,20 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFFF3E5AB), // Warm cream background
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              titleTextStyle: const TextStyle(
+                color: Color(0xFF3E2C1C),
+                fontFamily: "Garamond",
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              contentTextStyle: const TextStyle(
+                color: Color(0xFF3E2C1C),
+                fontFamily: "Garamond",
+                fontSize: 16,
+              ),
               title: const Text('Invalid File Format'),
               content: const Text('Only JPG and PNG file formats are allowed.'),
               actions: [
@@ -299,7 +313,14 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: const Text('OK'),
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(
+                      color: Color(0xFF3E2C1C),
+                      fontFamily: "Garamond",
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ],
             ),
