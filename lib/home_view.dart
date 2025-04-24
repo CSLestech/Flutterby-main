@@ -14,6 +14,7 @@ import 'package:http_parser/http_parser.dart';
 import 'about_page.dart';
 import 'history_page.dart';
 import 'help_page.dart';
+import 'widgets/guide_book_button.dart';
 
 void main() {
   runApp(const MyApp());
@@ -128,13 +129,18 @@ class HomeView extends StatefulWidget {
 
 class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   File? _pickedImage;
-  Map<String, dynamic>? _prediction;
   final ImagePicker _picker = ImagePicker();
   final List<Map<String, dynamic>> _history = [];
   int _selectedIndex = 0;
   int _navigationIndex = 0; // Track the current navigation bar index
   bool _isPermissionDialogVisible = false;
   bool _isLoading = false; // Loading indicator
+
+  // Add these constants at the class level
+  static const IconData consumableIcon = Icons.check_circle;
+  static const IconData halfConsumableIcon = Icons.warning;
+  static const IconData notConsumableIcon = Icons.cancel;
+  static const IconData defaultIcon = Icons.error;
 
   // 4. Updated Carousel Images
   final List<String> _carouselImages = [
@@ -188,11 +194,17 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
             // Icon - convert from integer code back to IconData
             if (item.containsKey('iconCode')) {
-              historyItem['icon'] = IconData(
-                item['iconCode'],
-                fontFamily: item['iconFontFamily'] ?? 'MaterialIcons',
-                fontPackage: null,
-              );
+              int iconCode = item['iconCode'];
+              // Map to constant IconData objects
+              if (iconCode == Icons.check_circle.codePoint) {
+                historyItem['icon'] = consumableIcon;
+              } else if (iconCode == Icons.warning.codePoint) {
+                historyItem['icon'] = halfConsumableIcon;
+              } else if (iconCode == Icons.cancel.codePoint) {
+                historyItem['icon'] = notConsumableIcon;
+              } else {
+                historyItem['icon'] = defaultIcon;
+              }
             }
 
             // Color - convert from integer back to Color
@@ -299,7 +311,6 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
       setState(() {
         _pickedImage = File(pickedFile.path);
-        _prediction = null;
       });
 
       await _sendImageToServer(_pickedImage!);
@@ -419,7 +430,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       _isLoading = true; // Show loading indicator
     });
 
-    final uri = Uri.parse("http://192.168.1.10:5000/predict");
+    final uri = Uri.parse("http://192.168.77.180:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
@@ -479,8 +490,20 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
             ),
           ),
         );
+      } else if (response.statusCode == 400) {
+        // Handle 400 Bad Request - Likely not a chicken breast image
+        if (!mounted) return;
+        _showErrorDialog(
+            'Unable to analyze this image. Please ensure you are uploading a clear image of chicken breast.',
+            title: 'Analysis Failed');
+      } else if (response.statusCode == 500) {
+        // Handle 500 Internal Server Error
+        if (!mounted) return;
+        _showErrorDialog(
+            'The server encountered an internal error. Please try again later.',
+            title: 'Server Error');
       } else {
-        // Handle server error
+        // Handle other status codes
         if (!mounted) return;
         _showErrorDialog('Server error: ${response.statusCode}');
       }
@@ -494,15 +517,15 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     }
   }
 
-  void _showErrorDialog(String message) {
+  void _showErrorDialog(String message, {String title = 'Error'}) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFFF3E5AB),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Error',
-          style: TextStyle(
+        title: Text(
+          title,
+          style: const TextStyle(
             color: Color(0xFF3E2C1C),
             fontFamily: "Garamond",
             fontSize: 20,
@@ -608,13 +631,13 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   IconData _getPredictionIcon(String prediction) {
     switch (prediction) {
       case "Consumable":
-        return Icons.check_circle;
+        return consumableIcon;
       case "Half-Consumable":
-        return Icons.warning;
+        return halfConsumableIcon;
       case "Not Consumable":
-        return Icons.cancel;
+        return notConsumableIcon;
       default:
-        return Icons.error;
+        return defaultIcon;
     }
   }
 
@@ -629,25 +652,6 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       default:
         return Colors.grey;
     }
-  }
-
-  void addToHistory(Map<String, dynamic> prediction) async {
-    final String timestamp = DateTime.now().toString();
-
-    setState(() {
-      _history.add({
-        "imagePath": _pickedImage?.path,
-        "prediction": prediction,
-        "timestamp": timestamp,
-      });
-      if (_history.length > 5) {
-        _history.removeAt(0);
-      }
-    });
-
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String encodedHistory = jsonEncode(_history);
-    await prefs.setString('history', encodedHistory);
   }
 
   void navigateToTab(int index) {
@@ -754,64 +758,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
             const SizedBox(height: 10),
             _buildPromotionalCards(),
             const SizedBox(height: 30),
-            if (_pickedImage != null)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      height: 300,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.file(
-                          _pickedImage!,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Center(
-                              child: Text("Failed to load image."),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    if (_prediction != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 8.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              _prediction!["icon"],
-                              color: _prediction!["color"],
-                              size: 24,
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                _prediction!["text"],
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: _prediction!["color"],
-                                ),
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 2,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              )
-            else
-              const Center(
-                child: Text("No image selected."),
-              ),
+            // Removed the image display section since users are redirected to prediction details
             const SizedBox(height: 5),
           ],
         ),
@@ -920,6 +867,10 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                   }
                 },
               ),
+              // Add the guide book button here
+              actions: const [
+                GuideBookButton(),
+              ],
             )
           : null, // No AppBar for other pages
       body: Stack(
@@ -1130,133 +1081,6 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
           ),
         );
       },
-    );
-  }
-}
-
-class HistoryPage extends StatelessWidget {
-  final List<Map<String, dynamic>> history;
-  final VoidCallback onBackToHome;
-
-  const HistoryPage({
-    super.key,
-    required this.history,
-    required this.onBackToHome,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor:
-            const Color(0xFF3E2C1C), // Deep warm brown - same as About page
-        elevation: 4,
-        iconTheme: const IconThemeData(color: Color(0xFFF3E5AB)), // Warm accent
-        titleTextStyle: const TextStyle(
-          color: Color(0xFFF3E5AB),
-          fontFamily: 'Garamond',
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-        ),
-        title: const Text("History"),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: onBackToHome,
-        ),
-      ),
-      body: BackgroundWrapper(
-        child: history.isEmpty
-            ? const Center(
-                child: Text(
-                  "No history available.",
-                  style: TextStyle(fontSize: 18),
-                ),
-              )
-            : ListView.builder(
-                itemCount: history.length,
-                itemBuilder: (context, index) {
-                  final entry = history[index];
-                  final String? imagePath = entry["imagePath"];
-                  final Map<String, dynamic> prediction = entry["prediction"];
-                  final String timestamp = entry["timestamp"];
-
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => HistoryDetailPage(
-                            imagePath: entry["imagePath"],
-                            prediction: entry["prediction"],
-                            timestamp: entry["timestamp"],
-                          ),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            if (imagePath != null &&
-                                File(imagePath).existsSync())
-                              ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(10),
-                                ),
-                                child: Image.file(
-                                  File(imagePath),
-                                  width: double.infinity,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                "Uploaded on: $timestamp",
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    prediction["icon"],
-                                    color: prediction["color"],
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    prediction["text"],
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: prediction["color"],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 // Use prefix for one of the imports with the BackgroundWrapper class
 import 'package:check_a_doodle_doo/background_wrapper.dart' as bg;
+import 'widgets/guide_book_button.dart';
 // Or comment out one of the imports if you're not using other parts of it
 // import 'package:check_a_doodle_doo/home_view.dart';
 
@@ -45,6 +46,9 @@ class PredictionDetailsScreen extends StatelessWidget {
             // You'll need to update the _sendImageToServer method
           },
         ),
+        actions: const [
+          GuideBookButton(),
+        ],
       ),
       body: bg.BackgroundWrapper(
         child: SingleChildScrollView(

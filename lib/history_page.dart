@@ -11,7 +11,6 @@ class HistoryPage extends StatelessWidget {
   const HistoryPage({
     super.key,
     required this.history,
-    required this.onBackToHome,
   });
 
   @override
