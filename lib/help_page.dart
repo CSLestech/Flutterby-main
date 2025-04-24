@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'widgets/guide_book_button.dart';
 
 class HelpStep extends StatelessWidget {
   final String imagePath;
@@ -61,6 +62,9 @@ class HelpPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: onBackToHome,
         ),
+        actions: const [
+          GuideBookButton(),
+        ],
       ),
       body: Stack(
         children: [

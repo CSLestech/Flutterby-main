@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:check_a_doodle_doo/background_wrapper.dart';
+import 'widgets/guide_book_button.dart';
 
 class AboutPage extends StatelessWidget {
   final VoidCallback onBackToHome;
@@ -45,6 +46,9 @@ class AboutPage extends StatelessWidget {
             icon: const Icon(Icons.arrow_back),
             onPressed: onBackToHome,
           ),
+          actions: const [
+            GuideBookButton(),
+          ],
         ),
         body: BackgroundWrapper(
           child: SingleChildScrollView(

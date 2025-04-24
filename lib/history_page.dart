@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:check_a_doodle_doo/background_wrapper.dart';
 import 'package:check_a_doodle_doo/prediction_details_screen.dart';
 import 'dart:developer' as dev;
+import 'widgets/guide_book_button.dart';
 
 class HistoryPage extends StatelessWidget {
   final List<Map<String, dynamic>> history;
@@ -11,6 +12,7 @@ class HistoryPage extends StatelessWidget {
   const HistoryPage({
     super.key,
     required this.history,
+    required this.onBackToHome,
   });
 
   @override
@@ -31,6 +33,9 @@ class HistoryPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: onBackToHome,
         ),
+        actions: const [
+          GuideBookButton(),
+        ],
       ),
       body: BackgroundWrapper(
         child: Padding(
