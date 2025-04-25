@@ -135,6 +135,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   int _navigationIndex = 0; // Track the current navigation bar index
   bool _isPermissionDialogVisible = false;
   bool _isLoading = false; // Loading indicator
+  ImageSource? _lastRequestedSource; // Track the last requested source
 
   // Add these constants at the class level
   static const IconData consumableIcon = Icons.check_circle;
@@ -166,10 +167,24 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
       if (_isPermissionDialogVisible) {
-        final status = await Permission.storage.status;
-        if (status.isGranted && mounted) {
+        // Check both storage and camera permissions
+        final storageStatus = await Permission.storage.status;
+        final cameraStatus = await Permission.camera.status;
+
+        if ((storageStatus.isGranted || cameraStatus.isGranted) && mounted) {
           Navigator.of(context).pop();
           _isPermissionDialogVisible = false;
+
+          // If camera permission was just granted, proceed with camera action
+          if (cameraStatus.isGranted &&
+              _lastRequestedSource == ImageSource.camera) {
+            _pickImageAfterPermission(ImageSource.camera);
+          }
+          // If storage permission was just granted, proceed with gallery action
+          else if (storageStatus.isGranted &&
+              _lastRequestedSource == ImageSource.gallery) {
+            _pickImageAfterPermission(ImageSource.gallery);
+          }
         }
       }
     }
@@ -245,6 +260,8 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    _lastRequestedSource = source; // Track the last requested source
+
     if (source == ImageSource.gallery) {
       // Check if permission is already granted
       final status = await Permission.storage.status;
@@ -262,7 +279,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
         }
       }
     } else if (source == ImageSource.camera) {
-      // For camera permission
+      // For camera permission - ensure we show the permission dialog
       final cameraStatus = await Permission.camera.status;
       if (cameraStatus.isDenied) {
         // Show custom dialog first
@@ -274,25 +291,90 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
         // Now request actual permission
         final permissionStatus = await Permission.camera.request();
         if (permissionStatus.isDenied || permissionStatus.isPermanentlyDenied) {
+          // This is the critical fix - ensure dialog is always shown
           _showPermissionDialog(isCamera: true);
           return;
         }
       }
     }
 
-    // Rest of your image picking code
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      final String fileExtension =
-          pickedFile.path.split('.').last.toLowerCase();
-      const List<String> allowedExtensions = ['jpg', 'png'];
+    // Proceed with image picking after permissions are confirmed
+    _pickImageAfterPermission(source);
+  }
 
-      if (!allowedExtensions.contains(fileExtension)) {
-        if (mounted) {
+  Future<void> _pickImageAfterPermission(ImageSource source) async {
+    try {
+      final pickedFile = await _picker.pickImage(source: source);
+
+      if (pickedFile != null) {
+        final String fileExtension =
+            pickedFile.path.split('.').last.toLowerCase();
+        const List<String> allowedExtensions = ['jpg', 'png'];
+
+        if (!allowedExtensions.contains(fileExtension)) {
+          // Invalid file format handling
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                backgroundColor:
+                    const Color(0xFFF3E5AB), // Warm cream background
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                titleTextStyle: const TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                contentTextStyle: const TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                  fontSize: 16,
+                ),
+                title: const Text('Invalid File Format'),
+                content:
+                    const Text('Only JPG and PNG file formats are allowed.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        color: Color(0xFF3E2C1C),
+                        fontFamily: "Garamond",
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          debugPrint("Invalid file format: $fileExtension");
+          return;
+        }
+
+        setState(() {
+          _pickedImage = File(pickedFile.path);
+        });
+
+        await _sendImageToServer(_pickedImage!);
+      } else {
+        log("No file selected.");
+      }
+    } catch (e) {
+      log("Error picking image: ${e.toString()}");
+
+      if (mounted) {
+        // Show a user-friendly error message based on the error type
+        if (e.toString().contains("camera") || source == ImageSource.camera) {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              backgroundColor: const Color(0xFFF3E5AB), // Warm cream background
+              backgroundColor: const Color(0xFFF3E5AB),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
               titleTextStyle: const TextStyle(
@@ -306,8 +388,9 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                 fontFamily: "Garamond",
                 fontSize: 16,
               ),
-              title: const Text('Invalid File Format'),
-              content: const Text('Only JPG and PNG file formats are allowed.'),
+              title: const Text('Camera Error'),
+              content: const Text(
+                  'Unable to access the camera. The camera may be in use by another application or your device may need to be restarted.'),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -325,18 +408,10 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
               ],
             ),
           );
+        } else {
+          _showErrorDialog('Error accessing media: ${e.toString()}');
         }
-        debugPrint("Invalid file format: $fileExtension");
-        return;
       }
-
-      setState(() {
-        _pickedImage = File(pickedFile.path);
-      });
-
-      await _sendImageToServer(_pickedImage!);
-    } else {
-      log("No file selected.");
     }
   }
 
@@ -451,7 +526,7 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       _isLoading = true; // Show loading indicator
     });
 
-    final uri = Uri.parse("http://192.168.140.180:5000/predict");
+    final uri = Uri.parse("http://10.0.0.157:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
