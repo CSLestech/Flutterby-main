@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:async'; // Added import for Completer
 // Use prefix for one of the imports with the BackgroundWrapper class
 import 'package:check_a_doodle_doo/background_wrapper.dart' as bg;
 import 'widgets/guide_book_button.dart';
@@ -60,19 +61,70 @@ class PredictionDetailsScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   children: [
-                    // Image centered vertically with increased height
+                    // Image with dynamic height based on aspect ratio
                     if (imagePath != null && File(imagePath!).existsSync())
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: Image.file(
-                          File(imagePath!),
-                          height: 600, // Increased from 280
-                          width: double.infinity,
-                          fit: BoxFit.contain,
-                        ),
+                      FutureBuilder<Size>(
+                        // Get image dimensions to calculate aspect ratio
+                        future: _getImageDimension(File(imagePath!)),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            // Calculate aspect ratio
+                            final aspectRatio =
+                                snapshot.data!.width / snapshot.data!.height;
+
+                            // For portrait images (aspect ratio < 1), use exactly 600px height
+                            // For square and landscape images, use the existing size calculation
+                            double imageHeight;
+                            if (aspectRatio < 1.0) {
+                              // Portrait images - fixed 600px height
+                              imageHeight = 600.0;
+                            } else {
+                              // Square and landscape images - use existing calculation
+                              imageHeight =
+                                  MediaQuery.of(context).size.height * 0.45;
+                            }
+
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: Image.file(
+                                File(imagePath!),
+                                height: imageHeight,
+                                width: double.infinity,
+                                fit: BoxFit.contain,
+                              ),
+                            );
+                          } else {
+                            // Default height while loading
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: Image.file(
+                                File(imagePath!),
+                                height:
+                                    MediaQuery.of(context).size.height * 0.45,
+                                width: double.infinity,
+                                fit: BoxFit.contain,
+                              ),
+                            );
+                          }
+                        },
                       ),
 
-                    const SizedBox(height: 30), // Increased from 20
+                    // Dynamic spacing based on image type
+                    FutureBuilder<Size>(
+                      future: imagePath != null && File(imagePath!).existsSync()
+                          ? _getImageDimension(File(imagePath!))
+                          : Future.value(const Size(1, 1)),
+                      builder: (context, snapshot) {
+                        final aspectRatio = snapshot.hasData
+                            ? snapshot.data!.width / snapshot.data!.height
+                            : 1.0;
+
+                        // Adjust spacing - smaller gap for portrait images
+                        final spacingHeight = aspectRatio < 1.0 ? 15.0 : 25.0;
+
+                        return SizedBox(height: spacingHeight);
+                      },
+                    ),
 
                     // Prediction container (remains the same)
                     Container(
@@ -193,6 +245,23 @@ class PredictionDetailsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Helper method to get image dimensions
+  Future<Size> _getImageDimension(File imageFile) async {
+    final Completer<Size> completer = Completer();
+    final image = Image.file(imageFile);
+    image.image.resolve(const ImageConfiguration()).addListener(
+      ImageStreamListener(
+        (ImageInfo info, bool _) {
+          completer.complete(Size(
+            info.image.width.toDouble(),
+            info.image.height.toDouble(),
+          ));
+        },
+      ),
+    );
+    return completer.future;
   }
 
   Color _getPredictionBackgroundColor(String? prediction) {

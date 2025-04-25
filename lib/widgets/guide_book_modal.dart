@@ -211,192 +211,191 @@ class _GuideBookModalState extends State<GuideBookModal> {
   }
 
   Widget _buildLessonPage(Map<String, dynamic> lesson) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Lesson header
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF3E2C1C),
-              borderRadius: BorderRadius.circular(12),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Lesson header
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF3E2C1C),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                "Lesson ${lesson['number']}",
+                style: const TextStyle(
+                  fontFamily: 'Garamond',
+                  fontSize: 14,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-            child: Text(
-              "Lesson ${lesson['number']}",
+
+            const SizedBox(height: 16),
+
+            // Lesson title
+            Text(
+              lesson['title'] ?? '',
               style: const TextStyle(
                 fontFamily: 'Garamond',
-                fontSize: 14,
-                color: Colors.white,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: Color(0xFF3E2C1C),
               ),
             ),
-          ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-          // Lesson title
-          Text(
-            lesson['title'] ?? '',
-            style: const TextStyle(
-              fontFamily: 'Garamond',
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF3E2C1C),
+            // Lesson content
+            Text(
+              lesson['content'] ?? '',
+              style: const TextStyle(
+                fontFamily: 'Garamond',
+                fontSize: 16,
+                color: Color(0xFF3E2C1C),
+              ),
             ),
-          ),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 24),
 
-          // Lesson content
-          Text(
-            lesson['content'] ?? '',
-            style: const TextStyle(
-              fontFamily: 'Garamond',
-              fontSize: 16,
-              color: Color(0xFF3E2C1C),
-            ),
-          ),
+            // Options
+            ...(lesson['options'] as List<dynamic>? ?? []).map((option) {
+              final Color optionColor = option['color'] ?? Colors.grey;
+              final IconData optionIcon = option['icon'] ?? Icons.circle;
 
-          const SizedBox(height: 24),
-
-          // Options
-          ...(lesson['options'] as List<dynamic>? ?? []).map((option) {
-            final Color optionColor = option['color'] ?? Colors.grey;
-            final IconData optionIcon = option['icon'] ?? Icons.circle;
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    optionIcon,
-                    color: optionColor,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          option['text'] ?? '',
-                          style: const TextStyle(
-                            fontFamily: 'Garamond',
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF3E2C1C),
-                          ),
-                        ),
-                        if (option['description'] != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
-                            child: Text(
-                              option['description'],
-                              style: const TextStyle(
-                                fontFamily: 'Garamond',
-                                fontSize: 14,
-                                color: Color(0xFF3E2C1C),
-                              ),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      optionIcon,
+                      color: optionColor,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            option['text'] ?? '',
+                            style: const TextStyle(
+                              fontFamily: 'Garamond',
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF3E2C1C),
                             ),
                           ),
-                      ],
+                          if (option['description'] != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                option['description'],
+                                style: const TextStyle(
+                                  fontFamily: 'Garamond',
+                                  fontSize: 14,
+                                  color: Color(0xFF3E2C1C),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildVisualParameterPage(Map<String, dynamic> parameter) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Visual parameter title
-          const Text(
-            "Visual Parameters",
-            style: TextStyle(
-              fontFamily: 'Garamond',
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF3E2C1C),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Visual parameter title
+            const Text(
+              "Visual Parameters",
+              style: TextStyle(
+                fontFamily: 'Garamond',
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF3E2C1C),
+              ),
             ),
-          ),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          // Parameter title
-          Text(
-            parameter['title'] ?? '',
-            style: const TextStyle(
-              fontFamily: 'Garamond',
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF3E2C1C),
+            // Parameter title
+            Text(
+              parameter['title'] ?? '',
+              style: const TextStyle(
+                fontFamily: 'Garamond',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF3E2C1C),
+              ),
             ),
-          ),
 
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Parameter description
-          Text(
-            parameter['description'] ?? '',
-            style: const TextStyle(
-              fontFamily: 'Garamond',
-              fontSize: 16,
-              color: Color(0xFF3E2C1C),
+            // Parameter description
+            Text(
+              parameter['description'] ?? '',
+              style: const TextStyle(
+                fontFamily: 'Garamond',
+                fontSize: 16,
+                color: Color(0xFF3E2C1C),
+              ),
             ),
-          ),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // Parameter image
-          Expanded(
-            child: Center(
+            // Parameter image - no longer in Expanded widget to work with SingleChildScrollView
+            Container(
+              height: 250, // Fixed height for image
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5E0D5),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: parameter['image'] != null
-                  ? Image.asset(
-                      parameter['image'],
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE5E0D5),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Center(
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        parameter['image'],
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
                             child: Icon(
                               Icons.image,
                               size: 64,
                               color: Color(0xFFBFB5A1),
                             ),
-                          ),
-                        );
-                      },
-                    )
-                  : Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE5E0D5),
-                        borderRadius: BorderRadius.circular(12),
+                          );
+                        },
                       ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.image,
-                          size: 64,
-                          color: Color(0xFFBFB5A1),
-                        ),
+                    )
+                  : const Center(
+                      child: Icon(
+                        Icons.image,
+                        size: 64,
+                        color: Color(0xFFBFB5A1),
                       ),
                     ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

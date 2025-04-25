@@ -15,6 +15,7 @@ import 'about_page.dart';
 import 'history_page.dart';
 import 'help_page.dart';
 import 'widgets/guide_book_button.dart';
+import 'utils/performance_monitor.dart'; // Import the performance monitor
 
 void main() {
   runApp(const MyApp());
@@ -127,7 +128,8 @@ class HomeView extends StatefulWidget {
   HomeViewState createState() => HomeViewState();
 }
 
-class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
+class HomeViewState extends State<HomeView>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   File? _pickedImage;
   final ImagePicker _picker = ImagePicker();
   final List<Map<String, dynamic>> _history = [];
@@ -136,6 +138,8 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   bool _isPermissionDialogVisible = false;
   bool _isLoading = false; // Loading indicator
   ImageSource? _lastRequestedSource; // Track the last requested source
+
+  final PerformanceMonitor _performanceMonitor = PerformanceMonitor();
 
   // Add these constants at the class level
   static const IconData consumableIcon = Icons.check_circle;
@@ -159,6 +163,9 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    // Make sure to stop any active monitoring
+    _performanceMonitor.stopCpuMonitoring();
+    _performanceMonitor.stopFrameMonitoring();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -526,6 +533,16 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       _isLoading = true; // Show loading indicator
     });
 
+    // Start the timer for total round-trip time
+    final Stopwatch timer = Stopwatch()..start();
+
+    // Start performance monitoring
+    await _performanceMonitor.startCpuMonitoring();
+    _performanceMonitor.startFrameMonitoring(this);
+
+    dev.log("🔍 Starting image classification performance test",
+        name: 'PerformanceTest');
+
     final uri = Uri.parse("http://10.0.0.157:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
@@ -541,6 +558,14 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
+      // Stop timer and calculate elapsed time
+      timer.stop();
+      final int elapsedMilliseconds = timer.elapsedMilliseconds;
+
+      // Stop performance monitoring and get results
+      await _performanceMonitor.stopCpuMonitoring();
+      _performanceMonitor.stopFrameMonitoring();
+
       // Hide loading indicator regardless of result
       setState(() {
         _isLoading = false;
@@ -548,12 +573,60 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+
+        // Get server processing time if available
+        double? serverProcessingTime;
+        if (data.containsKey('processing_time_sec')) {
+          serverProcessingTime =
+              double.tryParse(data['processing_time_sec'].toString());
+        }
+
+        // Check if prediction took more than 3 seconds (either client-side or server-side)
+        final clientTime = elapsedMilliseconds / 1000;
+        if (clientTime > 3.0 ||
+            (serverProcessingTime != null && serverProcessingTime > 3.0)) {
+          dev.log("⚠️ Warning: Prediction exceeded 3-second threshold",
+              name: 'PredictionTimer');
+          dev.log(
+              "  - Client-side total time: ${clientTime.toStringAsFixed(3)} seconds",
+              name: 'PredictionTimer');
+          if (serverProcessingTime != null) {
+            dev.log(
+                "  - Server-side processing time: ${serverProcessingTime.toStringAsFixed(3)} seconds",
+                name: 'PredictionTimer');
+          }
+        } else {
+          dev.log("✓ Prediction completed within time threshold",
+              name: 'PredictionTimer');
+          dev.log(
+              "  - Client-side total time: ${clientTime.toStringAsFixed(3)} seconds",
+              name: 'PredictionTimer');
+          if (serverProcessingTime != null) {
+            dev.log(
+                "  - Server-side processing time: ${serverProcessingTime.toStringAsFixed(3)} seconds",
+                name: 'PredictionTimer');
+          }
+        }
+
+        // Log the performance test results
+        dev.log("📊 Performance Test Results:", name: 'PerformanceTest');
+        dev.log(
+            "- CPU Usage within threshold (<25%): ${_performanceMonitor.isCpuUsageWithinThreshold()}",
+            name: 'PerformanceTest');
+        dev.log(
+            "- UI Responsiveness (>30 FPS): ${_performanceMonitor.isAppResponsive()}",
+            name: 'PerformanceTest');
+        dev.log(
+            "- Total response time: ${clientTime.toStringAsFixed(3)} seconds (${serverProcessingTime != null ? 'server: ${serverProcessingTime.toStringAsFixed(3)}s' : 'server time unknown'})",
+            name: 'PerformanceTest');
+
         final prediction = {
           "text": data['prediction'],
           "icon": _getPredictionIcon(data['prediction']),
           "color": _getPredictionColor(data['prediction']),
           "imagePath": imageFile.path,
           "timestamp": DateTime.now().toString(),
+          "processingTime": serverProcessingTime,
         };
 
         // Save to history
@@ -604,6 +677,10 @@ class HomeViewState extends State<HomeView> with WidgetsBindingObserver {
         _showErrorDialog('Server error: ${response.statusCode}');
       }
     } catch (e) {
+      // Stop performance monitoring in case of error
+      await _performanceMonitor.stopCpuMonitoring();
+      _performanceMonitor.stopFrameMonitoring();
+
       // Hide loading indicator and show error dialog
       setState(() {
         _isLoading = false;
