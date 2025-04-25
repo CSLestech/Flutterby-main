@@ -543,7 +543,7 @@ class HomeViewState extends State<HomeView>
     dev.log("🔍 Starting image classification performance test",
         name: 'PerformanceTest');
 
-    final uri = Uri.parse("http://10.0.0.157:5000/predict");
+    final uri = Uri.parse("http:// 192.168.77.180:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
