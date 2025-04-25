@@ -206,6 +206,10 @@ class GuideBookContent {
                     'Storage conditions, initial freshness, and handling all affect spoilage rate'
               },
             ],
+            'videoUrl': 'https://youtu.be/_ohJqkeNrb4?si=ippWUVa6RWj_Ot6z',
+            'thumbnailUrl':
+                'https://i.ytimg.com/vi/_ohJqkeNrb4/maxresdefault.jpg',
+            'videoTitle': 'Chicken Timelapse',
           },
           {
             'number': 6,

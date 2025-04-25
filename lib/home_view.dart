@@ -15,6 +15,7 @@ import 'about_page.dart';
 import 'history_page.dart';
 import 'help_page.dart';
 import 'widgets/guide_book_button.dart';
+import 'widgets/guide_book_modal.dart'; // Add this import for GuideBookModal
 import 'utils/performance_monitor.dart'; // Import the performance monitor
 
 void main() {
@@ -940,22 +941,110 @@ class HomeViewState extends State<HomeView>
   }
 
   Widget _buildPromotionalCards() {
-    final List<Map<String, String>> features = [
+    final List<Map<String, dynamic>> features = [
       {
         "title": "Defect Detection",
         "description": "Automatically detect defects in chicken breast images.",
+        "action": () =>
+            _showImageSourceDialog(), // Navigate to camera/gallery selection
       },
       {
         "title": "History Tracking",
         "description": "Keep track of your previous uploads and predictions.",
+        "action": () => navigateToTab(1), // Navigate to History tab
       },
       {
         "title": "User-Friendly",
         "description": "Simple and intuitive interface for easy navigation.",
+        "action": () {
+          // Open GuideBook modal
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return const GuideBookModal();
+            },
+          );
+        },
       },
       {
         "title": "Fast Processing",
         "description": "Get predictions in seconds with high accuracy.",
+        "action": () {
+          // If there's at least one item in history, navigate to the latest prediction details
+          if (_history.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PredictionDetailsScreen(
+                  imagePath: _history.first['imagePath'],
+                  prediction: _history.first,
+                  timestamp: _history.first['timestamp'],
+                  onNavigate: (index) {
+                    navigateToTab(index);
+                  },
+                ),
+              ),
+            );
+          } else {
+            // If no history, show a dialog suggesting to try the camera
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  backgroundColor: const Color(0xFFF3E5AB),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  title: const Text(
+                    "No Predictions Yet",
+                    style: TextStyle(
+                      color: Color(0xFF3E2C1C),
+                      fontFamily: "Garamond",
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  content: const Text(
+                    "Take a picture or select an image to see prediction results.",
+                    style: TextStyle(
+                      color: Color(0xFF3E2C1C),
+                      fontFamily: "Garamond",
+                      fontSize: 16,
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(
+                          color: Color(0xFF3E2C1C),
+                          fontFamily: "Garamond",
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _showImageSourceDialog();
+                      },
+                      child: const Text(
+                        "Take Picture",
+                        style: TextStyle(
+                          color: Color(0xFF3E2C1C),
+                          fontFamily: "Garamond",
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
+        },
       },
     ];
 
@@ -968,45 +1057,62 @@ class HomeViewState extends State<HomeView>
           final feature = features[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: Container(
-              width: 250,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(
-                    0xFFF3E5AB), // Warm cream background - same as camera dialog
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black
-                        .withAlpha(26), // Changed from withOpacity(0.1)
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    feature["title"]!,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: "Garamond",
-                      color: Color(0xFF3E2C1C), // Match text color with dialog
+            child: InkWell(
+              onTap: feature["action"] as Function(),
+              borderRadius: BorderRadius.circular(15),
+              child: Container(
+                width: 250,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(
+                      0xFFF3E5AB), // Warm cream background - same as camera dialog
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black
+                          .withAlpha(26), // Changed from withOpacity(0.1)
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    feature["description"]!,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontFamily: "Garamond",
-                      color: Color(0xFF3E2C1C), // Match text color with dialog
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      feature["title"]!,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: "Garamond",
+                        color:
+                            Color(0xFF3E2C1C), // Match text color with dialog
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      feature["description"]!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: "Garamond",
+                        color:
+                            Color(0xFF3E2C1C), // Match text color with dialog
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: const [
+                        Icon(
+                          Icons.arrow_forward,
+                          color: Color(0xFF3E2C1C),
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           );

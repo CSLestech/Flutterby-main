@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'guide_book_button.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'dart:developer' as dev;
+import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 
 class GuideBookModal extends StatefulWidget {
   const GuideBookModal({super.key});
@@ -14,6 +18,16 @@ class _GuideBookModalState extends State<GuideBookModal> {
   int _totalPages = 0;
   List<Map<String, dynamic>> _contentPages = [];
 
+  // Text to speech variables
+  FlutterTts? _flutterTts;
+  bool _isSpeaking = false;
+  String? _currentlyReadingText;
+  bool _ttsInitialized = false;
+  final double _volume = 1.0;
+  final double _pitch = 1.0;
+  final double _rate = 0.5;
+  final String _selectedLanguage = "en-US";
+
   @override
   void initState() {
     super.initState();
@@ -22,187 +36,403 @@ class _GuideBookModalState extends State<GuideBookModal> {
         ? _contentPages[0]['visualParameters'].length +
             _contentPages[0]['lessons'].length
         : 0;
+
+    // Initialize TTS engine
+    _initTts();
   }
 
+  // Initialize the text to speech engine with better error handling
+  Future<void> _initTts() async {
+    dev.log("Initializing TTS...", name: 'TTS');
+
+    try {
+      _flutterTts = FlutterTts();
+
+      // Set up TTS configuration
+      await _flutterTts!.setLanguage(_selectedLanguage);
+      await _flutterTts!.setSpeechRate(_rate);
+      await _flutterTts!.setVolume(_volume);
+      await _flutterTts!.setPitch(_pitch);
+
+      // Set handlers for TTS events
+      _flutterTts!.setStartHandler(() {
+        dev.log("TTS Started", name: 'TTS');
+        setState(() {
+          _isSpeaking = true;
+        });
+      });
+
+      _flutterTts!.setCompletionHandler(() {
+        dev.log("TTS Completed", name: 'TTS');
+        setState(() {
+          _isSpeaking = false;
+          _currentlyReadingText = null;
+        });
+      });
+
+      _flutterTts!.setErrorHandler((error) {
+        dev.log("TTS Error: $error", name: 'TTS');
+        setState(() {
+          _isSpeaking = false;
+          _currentlyReadingText = null;
+        });
+      });
+
+      // Mark TTS as initialized
+      setState(() {
+        _ttsInitialized = true;
+      });
+
+      dev.log("TTS initialized successfully", name: 'TTS');
+    } catch (e) {
+      dev.log("TTS Initialization Error: $e", name: 'TTS');
+      setState(() {
+        _ttsInitialized = false;
+      });
+      _showTtsErrorDialog('$e');
+    }
+  }
+
+  // Speak the given text with improved error handling
+  Future<void> _speak(String text) async {
+    if (!_ttsInitialized || _flutterTts == null) {
+      dev.log("TTS not initialized, attempting to initialize now", name: 'TTS');
+      await _initTts();
+      if (!_ttsInitialized) {
+        dev.log("Failed to initialize TTS", name: 'TTS');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Text-to-speech not available"),
+            duration: Duration(seconds: 2),
+          ));
+        }
+        return;
+      }
+    }
+
+    if (_isSpeaking) {
+      await _stopSpeaking();
+      // If we were already reading the same text, just stop
+      if (_currentlyReadingText == text) {
+        setState(() {
+          _currentlyReadingText = null;
+        });
+        return;
+      }
+    }
+
+    if (text.trim().isEmpty) {
+      dev.log("Empty text provided, nothing to speak", name: 'TTS');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("No text to read"),
+          duration: Duration(seconds: 2),
+        ));
+      }
+      return;
+    }
+
+    try {
+      setState(() {
+        _isSpeaking = true;
+        _currentlyReadingText = text;
+      });
+
+      // First check for any pending speech and stop it
+      await _flutterTts!.stop();
+
+      // Break text into chunks if it's too long (helps with stability)
+      if (text.length > 4000) {
+        // Logic for breaking text into reasonable chunks
+        final sentences = text.split(RegExp(r'(?<=[.!?])\s+'));
+        var currentChunk = "";
+
+        for (var sentence in sentences) {
+          if ((currentChunk + sentence).length < 3900) {
+            currentChunk += "$sentence ";
+          } else {
+            // Speak the current chunk and wait for completion
+            await _flutterTts!.speak(currentChunk);
+            await Future.delayed(const Duration(milliseconds: 500));
+            currentChunk = "$sentence ";
+          }
+        }
+
+        // Speak the final chunk if any text remains
+        if (currentChunk.isNotEmpty) {
+          await _flutterTts!.speak(currentChunk);
+        }
+      } else {
+        // For shorter text, just speak it directly
+        await _flutterTts!.speak(text);
+      }
+
+      dev.log("TTS started successfully", name: 'TTS');
+    } catch (e) {
+      dev.log("Error speaking text: $e", name: 'TTS');
+      setState(() {
+        _isSpeaking = false;
+        _currentlyReadingText = null;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Speech error: $e"),
+          duration: const Duration(seconds: 2),
+        ));
+      }
+    }
+  }
+
+  // Show error dialog
+  void _showTtsErrorDialog(String error) {
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Text-to-Speech Error'),
+          content: Text('Could not initialize text-to-speech: $error'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  // Stop speaking with improved error handling
+  Future<void> _stopSpeaking() async {
+    try {
+      if (_flutterTts != null && _isSpeaking) {
+        await _flutterTts!.stop();
+        setState(() {
+          _isSpeaking = false;
+        });
+      }
+    } catch (e) {
+      dev.log("Error stopping TTS: $e", name: 'TTS');
+    }
+  }
+
+  // Clean up resources
   @override
   void dispose() {
     _pageController.dispose();
+    _stopTts();
     super.dispose();
+  }
+
+  Future<void> _stopTts() async {
+    if (_flutterTts != null) {
+      try {
+        await _flutterTts!.stop();
+        await _flutterTts!.awaitSpeakCompletion(false);
+      } catch (e) {
+        dev.log("Error disposing TTS: $e", name: 'TTS');
+      }
+    }
+  }
+
+  // Helper method to get text to read for current page
+  String _getTextToReadForCurrentPage() {
+    if (_contentPages.isEmpty) return '';
+
+    final currentContent = _contentPages[0];
+    final lessonLength = currentContent['lessons'].length;
+
+    String textToRead = '';
+
+    if (_currentPage < lessonLength) {
+      // We're on a lesson page
+      final lesson = currentContent['lessons'][_currentPage];
+      textToRead =
+          'Lesson ${lesson['number']}. ${lesson['title']}. ${lesson['content']} ';
+
+      // Add options if available
+      if (lesson['options'] != null && lesson['options'] is List) {
+        for (var option in lesson['options']) {
+          textToRead += '${option['text']}. ';
+          if (option['description'] != null) {
+            textToRead += '${option['description']}. ';
+          }
+        }
+      }
+    } else {
+      // We're on a visual parameter page
+      final paramIndex = _currentPage - lessonLength;
+      if (paramIndex < currentContent['visualParameters'].length) {
+        final parameter = currentContent['visualParameters'][paramIndex];
+        textToRead = '${parameter['title']}. ${parameter['description']} ';
+      }
+    }
+
+    return textToRead;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_contentPages.isEmpty) return const SizedBox.shrink();
-
-    final currentContent = _contentPages[0];
-
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(16),
+      elevation: 0,
+      insetPadding: const EdgeInsets.all(20),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.7,
+        height: MediaQuery.of(context).size.height * 0.8,
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F1E8), // Warm cream background
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFF3E2C1C),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(
-                  77), // Fixed: using withAlpha instead of withOpacity
-              spreadRadius: 2,
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
         ),
         child: Column(
           children: [
-            // Header with close button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(width: 40), // Space for balance
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        currentContent['title'] ?? 'Guide Book',
-                        style: const TextStyle(
-                          fontFamily: 'Garamond',
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF3E2C1C),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: Color(0xFF3E2C1C),
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-
-            // Subtitle
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-              child: Text(
-                currentContent['subtitle'] ?? '',
-                style: const TextStyle(
-                  fontFamily: 'Garamond',
-                  fontSize: 14,
-                  color: Color(0xFF3E2C1C),
-                  fontStyle: FontStyle.italic,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-
-            // Main content with PageView
-            Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  border: Border(
-                    left: BorderSide(color: Color(0xFFD9D0C1), width: 1),
-                    right: BorderSide(color: Color(0xFFD9D0C1), width: 1),
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _contentPages.isNotEmpty
+                      ? _contentPages[0]['title']
+                      : 'Guide Book',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPage = index;
-                    });
-                  },
+                Row(
                   children: [
-                    // Lessons pages
-                    ...List.generate(
-                      currentContent['lessons'].length,
-                      (index) =>
-                          _buildLessonPage(currentContent['lessons'][index]),
+                    // Text-to-speech button
+                    IconButton(
+                      icon: Icon(
+                        _isSpeaking
+                            ? Icons.volume_up
+                            : Icons.volume_up_outlined,
+                        color: _isSpeaking ? Colors.blue : Colors.grey,
+                      ),
+                      onPressed: () {
+                        final text = _getTextToReadForCurrentPage();
+                        if (_isSpeaking) {
+                          _stopSpeaking();
+                        } else {
+                          _speak(text);
+                        }
+                      },
+                      tooltip: _isSpeaking ? 'Stop Reading' : 'Read Aloud',
                     ),
-
-                    // Visual Parameters pages
-                    ...List.generate(
-                      currentContent['visualParameters'].length,
-                      (index) => _buildVisualParameterPage(
-                          currentContent['visualParameters'][index]),
+                    // Close button
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        _stopSpeaking(); // Stop speaking when closing
+                        Navigator.of(context).pop();
+                      },
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
-
-            // Page indicator and navigation
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Color(0xFFD9D0C1), width: 1),
+            const SizedBox(height: 10),
+            // Subtitle
+            if (_contentPages.isNotEmpty &&
+                _contentPages[0]['subtitle'] != null)
+              Text(
+                _contentPages[0]['subtitle'],
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Page counter
-                  Text(
-                    "${_currentPage + 1} / $_totalPages",
-                    style: const TextStyle(
-                      fontFamily: 'Garamond',
-                      fontSize: 14,
-                      color: Color(0xFF3E2C1C),
+            const SizedBox(height: 20),
+            // Page content
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _totalPages,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                    // Stop speaking when page changes
+                    if (_isSpeaking) {
+                      _stopSpeaking();
+                    }
+                  });
+                },
+                itemBuilder: (context, index) {
+                  if (_contentPages.isEmpty) {
+                    return const Center(child: Text('No content available'));
+                  }
+
+                  final currentContent = _contentPages[0];
+                  final lessonLength = currentContent['lessons'].length;
+
+                  if (index < lessonLength) {
+                    // Lessons pages
+                    final lesson = currentContent['lessons'][index];
+                    return _buildLessonPage(lesson);
+                  } else {
+                    // Visual parameters pages
+                    final paramIndex = index - lessonLength;
+                    if (paramIndex <
+                        currentContent['visualParameters'].length) {
+                      return _buildVisualParameterPage(
+                          currentContent['visualParameters'][paramIndex]);
+                    }
+                  }
+                  return const Center(child: Text('Page not found'));
+                },
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Navigation controls
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Back button
+                ElevatedButton(
+                  onPressed: _currentPage > 0
+                      ? () {
+                          _pageController.previousPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3E2C1C),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-
-                  // Navigation buttons
-                  Row(
-                    children: [
-                      // Back button
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios,
-                            size: 18, color: Color(0xFF3E2C1C)),
-                        onPressed: _currentPage > 0
-                            ? () {
-                                _pageController.previousPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              }
-                            : null,
-                        color: _currentPage > 0
-                            ? const Color(0xFF3E2C1C)
-                            : Colors.grey,
-                      ),
-                      // Forward button
-                      IconButton(
-                        icon: const Icon(Icons.arrow_forward_ios,
-                            size: 18, color: Color(0xFF3E2C1C)),
-                        onPressed: _currentPage < _totalPages - 1
-                            ? () {
-                                _pageController.nextPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              }
-                            : null,
-                        color: _currentPage < _totalPages - 1
-                            ? const Color(0xFF3E2C1C)
-                            : Colors.grey,
-                      ),
-                    ],
+                  child: const Text('Previous'),
+                ),
+                // Page indicator
+                Text(
+                  '${_currentPage + 1} / $_totalPages',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                // Forward button
+                ElevatedButton(
+                  onPressed: _currentPage < _totalPages - 1
+                      ? () {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3E2C1C),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                ],
-              ),
+                  child: const Text('Next'),
+                ),
+              ],
             ),
           ],
         ),
@@ -212,191 +442,207 @@ class _GuideBookModalState extends State<GuideBookModal> {
 
   Widget _buildLessonPage(Map<String, dynamic> lesson) {
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Lesson header
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF3E2C1C),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                "Lesson ${lesson['number']}",
-                style: const TextStyle(
-                  fontFamily: 'Garamond',
-                  fontSize: 14,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Lesson ${lesson['number']}: ${lesson['title']}',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3E2C1C),
             ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            lesson['content'],
+            style: const TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 20),
 
-            const SizedBox(height: 16),
-
-            // Lesson title
-            Text(
-              lesson['title'] ?? '',
-              style: const TextStyle(
-                fontFamily: 'Garamond',
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF3E2C1C),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Lesson content
-            Text(
-              lesson['content'] ?? '',
-              style: const TextStyle(
-                fontFamily: 'Garamond',
-                fontSize: 16,
-                color: Color(0xFF3E2C1C),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Options
-            ...(lesson['options'] as List<dynamic>? ?? []).map((option) {
-              final Color optionColor = option['color'] ?? Colors.grey;
-              final IconData optionIcon = option['icon'] ?? Icons.circle;
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      optionIcon,
-                      color: optionColor,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            option['text'] ?? '',
-                            style: const TextStyle(
-                              fontFamily: 'Garamond',
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF3E2C1C),
-                            ),
-                          ),
-                          if (option['description'] != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                option['description'],
-                                style: const TextStyle(
-                                  fontFamily: 'Garamond',
-                                  fontSize: 14,
-                                  color: Color(0xFF3E2C1C),
+          // Add YouTube video if available
+          if (lesson['videoUrl'] != null && lesson['thumbnailUrl'] != null) ...[
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: () {
+                // Launch the URL
+                _launchYoutubeURL(lesson['videoUrl']);
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Video thumbnail with play button overlay
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          lesson['thumbnailUrl'],
+                          width: double.infinity,
+                          height: 180,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: double.infinity,
+                              height: 180,
+                              color: Colors.grey.shade300,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.error_outline,
+                                  size: 50,
+                                  color: Colors.grey,
                                 ),
                               ),
-                            ),
-                        ],
+                            );
+                          },
+                        ),
                       ),
+                      Container(
+                        width: 60,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Video title
+                  Text(
+                    lesson['videoTitle'] ?? 'Watch Video',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF3E2C1C),
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+
+          if (lesson['options'] != null && lesson['options'] is List)
+            ...lesson['options'].map<Widget>((option) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Card(
+                  color: option['color'] != null
+                      ? (option['color'] as Color).withAlpha(25)
+                      : Colors.grey.shade100,
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color: option['color'] ?? Colors.grey,
+                      width: 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (option['icon'] != null)
+                          Icon(
+                            option['icon'],
+                            color: option['color'],
+                            size: 24,
+                          ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                option['text'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              if (option['description'] != null)
+                                Text(
+                                  option['description'],
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               );
-            }),
-          ],
-        ),
+            }).toList(),
+        ],
       ),
     );
   }
 
   Widget _buildVisualParameterPage(Map<String, dynamic> parameter) {
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Visual parameter title
-            const Text(
-              "Visual Parameters",
-              style: TextStyle(
-                fontFamily: 'Garamond',
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF3E2C1C),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            parameter['title'],
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3E2C1C),
             ),
-
-            const SizedBox(height: 16),
-
-            // Parameter title
-            Text(
-              parameter['title'] ?? '',
-              style: const TextStyle(
-                fontFamily: 'Garamond',
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF3E2C1C),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Parameter description
-            Text(
-              parameter['description'] ?? '',
-              style: const TextStyle(
-                fontFamily: 'Garamond',
-                fontSize: 16,
-                color: Color(0xFF3E2C1C),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Parameter image - no longer in Expanded widget to work with SingleChildScrollView
-            Container(
-              height: 250, // Fixed height for image
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE5E0D5),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: parameter['image'] != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        parameter['image'],
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                            child: Icon(
-                              Icons.image,
-                              size: 64,
-                              color: Color(0xFFBFB5A1),
-                            ),
-                          );
-                        },
-                      ),
-                    )
-                  : const Center(
+          ),
+          const SizedBox(height: 20),
+          Text(
+            parameter['description'],
+            style: const TextStyle(fontSize: 16),
+          ),
+          if (parameter['image'] != null) ...[
+            const SizedBox(height: 20),
+            Center(
+              child: Image.asset(
+                parameter['image'],
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const SizedBox(
+                    height: 150,
+                    child: Center(
                       child: Icon(
-                        Icons.image,
-                        size: 64,
-                        color: Color(0xFFBFB5A1),
+                        Icons.image_not_supported,
+                        size: 50,
+                        color: Colors.grey,
                       ),
                     ),
+                  );
+                },
+              ),
             ),
           ],
-        ),
+        ],
       ),
     );
+  }
+
+  void _launchYoutubeURL(String url) async {
+    try {
+      final Uri uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        dev.log("Could not launch $url", name: 'URL Launcher');
+      }
+    } catch (e) {
+      dev.log("Error launching URL: $e", name: 'URL Launcher');
+    }
   }
 }
