@@ -208,12 +208,12 @@ class PerformanceMonitor {
       if (kDebugMode) {
         dev.log(message, name: 'PerformanceMonitor');
       } else {
-        // In release builds, use print which gets captured by most logging systems
-        print('PerformanceMonitor: $message');
+        // In release builds, use Flutter's logging mechanism instead of print
+        dev.log(message, name: 'PerformanceMonitor');
       }
     } catch (_) {
       // Ensure logging never crashes the app
-      print('PerformanceMonitor: $message');
+      dev.log('PerformanceMonitor: $message');
     }
   }
 }
@@ -246,7 +246,7 @@ Future<double> _getCpuUsage() async {
       return _getIOSCpuUsage();
     }
   } catch (e) {
-    print('Error reading CPU usage: $e');
+    dev.log('Error reading CPU usage: $e', name: 'PerformanceMonitor');
   }
 
   return 15.0; // Default moderate value if we can't measure
