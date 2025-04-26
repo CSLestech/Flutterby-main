@@ -564,7 +564,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
               borderRadius: BorderRadius.circular(12),
               child: AspectRatio(
                 aspectRatio: 16 / 9, // Maintain a consistent aspect ratio
-                child: Container(
+                child: SizedBox(
                   width: double.infinity,
                   child: Image.asset(
                     lesson['image'],
