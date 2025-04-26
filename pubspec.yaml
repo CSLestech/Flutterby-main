@@ -86,6 +86,12 @@ flutter:
     - images/ui/results.png
     - images/ui/food_safety.png
 
+# Guide Book images
+    - images/ui/consumable204.jpg
+    - images/ui/halfconsumable195.jpg
+    - images/ui/notconsumable408.jpg
+    
+
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

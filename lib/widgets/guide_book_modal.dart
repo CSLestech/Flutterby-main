@@ -568,8 +568,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
                   width: double.infinity,
                   child: Image.asset(
                     lesson['image'],
-                    fit: BoxFit
-                        .cover, // Cover ensures the image fills the container
+                    fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
                         width: double.infinity,
@@ -689,35 +688,67 @@ class _GuideBookModalState extends State<GuideBookModal> {
                   ),
                   child: Padding(
                     padding: EdgeInsets.all(contentPadding),
-                    child: Row(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (option['icon'] != null)
-                          Icon(
-                            option['icon'],
-                            color: option['color'],
-                            size: contentSize + 8,
-                          ),
-                        SizedBox(width: contentPadding),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                option['text'],
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: optionTitleSize,
-                                ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (option['icon'] != null)
+                              Icon(
+                                option['icon'],
+                                color: option['color'],
+                                size: contentSize + 8,
                               ),
-                              if (option['description'] != null)
-                                Text(
-                                  option['description'],
-                                  style: TextStyle(fontSize: optionDescSize),
-                                ),
-                            ],
-                          ),
+                            SizedBox(width: contentPadding),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    option['text'],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: optionTitleSize,
+                                    ),
+                                  ),
+                                  if (option['description'] != null)
+                                    Text(
+                                      option['description'],
+                                      style:
+                                          TextStyle(fontSize: optionDescSize),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
+                        // Add the image below the text if it exists
+                        if (option['imagePath'] != null) ...[
+                          SizedBox(height: contentPadding),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: AspectRatio(
+                              aspectRatio: 16 / 9,
+                              child: Image.asset(
+                                option['imagePath'],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    height: 100,
+                                    color: Colors.grey.shade200,
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

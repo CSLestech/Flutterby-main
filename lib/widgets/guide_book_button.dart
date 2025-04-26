@@ -20,21 +20,26 @@ class GuideBookContent {
                 'color': Colors.green,
                 'icon': Icons.check_circle,
                 'description':
-                    'chicken that is safe to eat with normal cooking methods'
+                    'chicken that is safe to eat with normal cooking methods',
+                'imagePath': 'images/consumable204.jpg', // Add image path here
               },
               {
                 'text': 'Half-Consumable',
                 'color': Colors.orange,
                 'icon': Icons.warning,
                 'description':
-                    'Chicken showing early signs of deterioration but can still be safely eaten if thoroughly cooked'
+                    'Chicken showing early signs of deterioration but can still be safely eaten if thoroughly cooked',
+                'imagePath':
+                    'images/halfconsumable195.jpg', // Add image path here
               },
               {
                 'text': 'Not Consumable',
                 'color': Colors.red,
                 'icon': Icons.cancel,
                 'description':
-                    'Spoiled chicken that should not be consumed under any circumstances'
+                    'Spoiled chicken that should not be consumed under any circumstances',
+                'imagePath':
+                    'images/notconsumable408.jpg', // Add image path here
               },
             ],
           },
