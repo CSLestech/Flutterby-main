@@ -274,34 +274,76 @@ class _GuideBookModalState extends State<GuideBookModal> {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen dimensions
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+
+    // Set sizes based on screen dimensions
+    final bool isSmallScreen = screenWidth < 360;
+    final bool isVerySmallScreen = screenWidth < 320;
+    final bool isNarrowScreen = screenWidth < 400;
+    final bool isShortScreen = screenHeight < 700;
+
+    // Dynamic text sizing based on screen width
+    final double titleSize = isVerySmallScreen
+        ? 14.0
+        : (isSmallScreen ? 16.0 : (isNarrowScreen ? 17.0 : 18.0));
+    final double subtitleSize = isSmallScreen ? 12.0 : 14.0;
+    final double contentSize = isSmallScreen ? 14.0 : 16.0;
+    final double optionTitleSize = isSmallScreen ? 14.0 : 16.0;
+    final double optionDescSize = isSmallScreen ? 12.0 : 14.0;
+    final double buttonTextSize = isSmallScreen ? 12.0 : 14.0;
+
+    // Dynamic padding and spacing
+    final double dialogPadding =
+        isSmallScreen ? 8.0 : (isNarrowScreen ? 12.0 : 16.0);
+    final double contentPadding = isSmallScreen ? 6.0 : 8.0;
+    final double verticalSpacing = isShortScreen ? 6.0 : 10.0;
+
+    // Dynamic image height
+    final double imageHeight =
+        isShortScreen ? 120.0 : (isSmallScreen ? 150.0 : 180.0);
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      insetPadding: const EdgeInsets.all(20),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.03, // 3% of screen width
+        vertical: screenHeight * 0.02, // 2% of screen height
+      ),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.8,
-        padding: const EdgeInsets.all(20),
+        width: screenWidth * 0.94, // 94% of screen width
+        height: screenHeight * 0.85, // 85% of screen height
+        padding: EdgeInsets.all(dialogPadding),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(15),
         ),
         child: Column(
           children: [
-            // Header
+            // Header with responsive spacing
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  _contentPages.isNotEmpty
-                      ? _contentPages[0]['title']
-                      : 'Guide Book',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  flex: 5, // Give more space to the title
+                  child: Text(
+                    _contentPages.isNotEmpty
+                        ? _contentPages[0]['title']
+                        : 'Guide Book',
+                    style: TextStyle(
+                      fontSize: titleSize,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: isSmallScreen
+                        ? 2
+                        : 1, // Allow two lines on small screens
                   ),
                 ),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // Text-to-speech button
                     IconButton(
@@ -310,6 +352,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
                             ? Icons.volume_up
                             : Icons.volume_up_outlined,
                         color: _isSpeaking ? Colors.blue : Colors.grey,
+                        size: isSmallScreen ? 18 : 22,
                       ),
                       onPressed: () {
                         final text = _getTextToReadForCurrentPage();
@@ -320,31 +363,48 @@ class _GuideBookModalState extends State<GuideBookModal> {
                         }
                       },
                       tooltip: _isSpeaking ? 'Stop Reading' : 'Read Aloud',
+                      constraints: BoxConstraints(
+                          minWidth: isSmallScreen ? 32 : 40,
+                          minHeight: isSmallScreen ? 32 : 40),
+                      padding: EdgeInsets.all(isSmallScreen ? 4 : 6),
                     ),
                     // Close button
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: Icon(
+                        Icons.close,
+                        size: isSmallScreen ? 18 : 22,
+                      ),
                       onPressed: () {
                         _stopSpeaking(); // Stop speaking when closing
                         Navigator.of(context).pop();
                       },
+                      constraints: BoxConstraints(
+                          minWidth: isSmallScreen ? 32 : 40,
+                          minHeight: isSmallScreen ? 32 : 40),
+                      padding: EdgeInsets.all(isSmallScreen ? 4 : 6),
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: verticalSpacing / 2),
             // Subtitle
             if (_contentPages.isNotEmpty &&
                 _contentPages[0]['subtitle'] != null)
-              Text(
-                _contentPages[0]['subtitle'],
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontStyle: FontStyle.italic,
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: dialogPadding / 2),
+                child: Text(
+                  _contentPages[0]['subtitle'],
+                  style: TextStyle(
+                    fontSize: subtitleSize,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3, // Allow more lines for subtitle
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            const SizedBox(height: 20),
+            SizedBox(height: verticalSpacing),
             // Page content
             Expanded(
               child: PageView.builder(
@@ -370,67 +430,98 @@ class _GuideBookModalState extends State<GuideBookModal> {
                   if (index < lessonLength) {
                     // Lessons pages
                     final lesson = currentContent['lessons'][index];
-                    return _buildLessonPage(lesson);
+                    return _buildLessonPage(
+                        lesson,
+                        contentSize,
+                        optionTitleSize,
+                        optionDescSize,
+                        contentPadding,
+                        imageHeight);
                   } else {
                     // Visual parameters pages
                     final paramIndex = index - lessonLength;
                     if (paramIndex <
                         currentContent['visualParameters'].length) {
                       return _buildVisualParameterPage(
-                          currentContent['visualParameters'][paramIndex]);
+                          currentContent['visualParameters'][paramIndex],
+                          contentSize,
+                          imageHeight);
                     }
                   }
                   return const Center(child: Text('Page not found'));
                 },
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: verticalSpacing / 2),
             // Navigation controls
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Back button
-                ElevatedButton(
-                  onPressed: _currentPage > 0
-                      ? () {
-                          _pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3E2C1C),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                SizedBox(
+                  height: isSmallScreen ? 30 : 36,
+                  child: ElevatedButton(
+                    onPressed: _currentPage > 0
+                        ? () {
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3E2C1C),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 6 : 10,
+                        vertical: isSmallScreen ? 2 : 4,
+                      ),
+                    ),
+                    child: Text(
+                      'Previous',
+                      style: TextStyle(fontSize: buttonTextSize),
                     ),
                   ),
-                  child: const Text('Previous'),
                 ),
                 // Page indicator
                 Text(
                   '${_currentPage + 1} / $_totalPages',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: buttonTextSize,
+                  ),
                 ),
                 // Forward button
-                ElevatedButton(
-                  onPressed: _currentPage < _totalPages - 1
-                      ? () {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3E2C1C),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                SizedBox(
+                  height: isSmallScreen ? 30 : 36,
+                  child: ElevatedButton(
+                    onPressed: _currentPage < _totalPages - 1
+                        ? () {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3E2C1C),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmallScreen ? 6 : 10,
+                        vertical: isSmallScreen ? 2 : 4,
+                      ),
+                    ),
+                    child: Text(
+                      'Next',
+                      style: TextStyle(fontSize: buttonTextSize),
                     ),
                   ),
-                  child: const Text('Next'),
                 ),
               ],
             ),
@@ -440,7 +531,14 @@ class _GuideBookModalState extends State<GuideBookModal> {
     );
   }
 
-  Widget _buildLessonPage(Map<String, dynamic> lesson) {
+  Widget _buildLessonPage(
+    Map<String, dynamic> lesson,
+    double contentSize,
+    double optionTitleSize,
+    double optionDescSize,
+    double contentPadding,
+    double imageHeight,
+  ) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,7 +554,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
           const SizedBox(height: 10),
           Text(
             lesson['content'],
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: contentSize),
           ),
           const SizedBox(height: 20),
 
@@ -480,12 +578,12 @@ class _GuideBookModalState extends State<GuideBookModal> {
                         child: Image.network(
                           lesson['thumbnailUrl'],
                           width: double.infinity,
-                          height: 180,
+                          height: imageHeight,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return Container(
                               width: double.infinity,
-                              height: 180,
+                              height: imageHeight,
                               color: Colors.grey.shade300,
                               child: const Center(
                                 child: Icon(
@@ -534,7 +632,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
           if (lesson['options'] != null && lesson['options'] is List)
             ...lesson['options'].map<Widget>((option) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: EdgeInsets.only(bottom: contentPadding),
                 child: Card(
                   color: option['color'] != null
                       ? (option['color'] as Color).withAlpha(25)
@@ -548,7 +646,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: EdgeInsets.all(contentPadding),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -565,15 +663,15 @@ class _GuideBookModalState extends State<GuideBookModal> {
                             children: [
                               Text(
                                 option['text'],
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: optionTitleSize,
                                 ),
                               ),
                               if (option['description'] != null)
                                 Text(
                                   option['description'],
-                                  style: const TextStyle(fontSize: 14),
+                                  style: TextStyle(fontSize: optionDescSize),
                                 ),
                             ],
                           ),
@@ -589,7 +687,11 @@ class _GuideBookModalState extends State<GuideBookModal> {
     );
   }
 
-  Widget _buildVisualParameterPage(Map<String, dynamic> parameter) {
+  Widget _buildVisualParameterPage(
+    Map<String, dynamic> parameter,
+    double contentSize,
+    double imageHeight,
+  ) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,18 +707,19 @@ class _GuideBookModalState extends State<GuideBookModal> {
           const SizedBox(height: 20),
           Text(
             parameter['description'],
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(fontSize: contentSize),
           ),
           if (parameter['image'] != null) ...[
             const SizedBox(height: 20),
             Center(
               child: Image.asset(
                 parameter['image'],
+                height: imageHeight,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  return const SizedBox(
-                    height: 150,
-                    child: Center(
+                  return SizedBox(
+                    height: imageHeight,
+                    child: const Center(
                       child: Icon(
                         Icons.image_not_supported,
                         size: 50,
