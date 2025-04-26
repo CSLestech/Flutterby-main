@@ -545,25 +545,65 @@ class _GuideBookModalState extends State<GuideBookModal> {
         children: [
           Text(
             'Lesson ${lesson['number']}: ${lesson['title']}',
-            style: const TextStyle(
-              fontSize: 18,
+            style: TextStyle(
+              fontSize: contentSize + 4,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF3E2C1C),
+              color: const Color(0xFF3E2C1C),
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: contentPadding),
           Text(
             lesson['content'],
             style: TextStyle(fontSize: contentSize),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: contentPadding * 2),
+
+          // Display the image below description if available
+          if (lesson['image'] != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: AspectRatio(
+                aspectRatio: 16 / 9, // Maintain a consistent aspect ratio
+                child: Container(
+                  width: double.infinity,
+                  child: Image.asset(
+                    lesson['image'],
+                    fit: BoxFit
+                        .cover, // Cover ensures the image fills the container
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: double.infinity,
+                        color: Colors.grey.shade200,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.image_not_supported,
+                              size: contentSize * 2,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: contentPadding),
+                            Text(
+                              'Image not available',
+                              style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: contentSize - 2),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: contentPadding * 2),
+          ],
 
           // Add YouTube video if available
           if (lesson['videoUrl'] != null && lesson['thumbnailUrl'] != null) ...[
-            const SizedBox(height: 10),
             InkWell(
               onTap: () {
-                // Launch the URL
                 _launchYoutubeURL(lesson['videoUrl']);
               },
               child: Column(
@@ -575,25 +615,26 @@ class _GuideBookModalState extends State<GuideBookModal> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          lesson['thumbnailUrl'],
-                          width: double.infinity,
-                          height: imageHeight,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              width: double.infinity,
-                              height: imageHeight,
-                              color: Colors.grey.shade300,
-                              child: const Center(
-                                child: Icon(
-                                  Icons.error_outline,
-                                  size: 50,
-                                  color: Colors.grey,
+                        child: AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Image.network(
+                            lesson['thumbnailUrl'],
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                color: Colors.grey.shade300,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.error_outline,
+                                    size: contentSize * 2,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                       ),
                       Container(
@@ -613,22 +654,23 @@ class _GuideBookModalState extends State<GuideBookModal> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: contentPadding),
                   // Video title
                   Text(
                     lesson['videoTitle'] ?? 'Watch Video',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: contentSize - 2,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF3E2C1C),
+                      color: const Color(0xFF3E2C1C),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: contentPadding * 2),
           ],
 
+          // Display lesson options
           if (lesson['options'] != null && lesson['options'] is List)
             ...lesson['options'].map<Widget>((option) {
               return Padding(
@@ -654,9 +696,9 @@ class _GuideBookModalState extends State<GuideBookModal> {
                           Icon(
                             option['icon'],
                             color: option['color'],
-                            size: 24,
+                            size: contentSize + 8,
                           ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: contentPadding),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

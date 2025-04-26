@@ -61,53 +61,9 @@ class PredictionDetailsScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
                   children: [
-                    // Image with dynamic height based on aspect ratio
+                    // Image display
                     if (imagePath != null && File(imagePath!).existsSync())
-                      FutureBuilder<Size>(
-                        // Get image dimensions to calculate aspect ratio
-                        future: _getImageDimension(File(imagePath!)),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData) {
-                            // Calculate aspect ratio
-                            final aspectRatio =
-                                snapshot.data!.width / snapshot.data!.height;
-
-                            // For portrait images (aspect ratio < 1), use exactly 600px height
-                            // For square and landscape images, use the existing size calculation
-                            double imageHeight;
-                            if (aspectRatio < 1.0) {
-                              // Portrait images - fixed 600px height
-                              imageHeight = 600.0;
-                            } else {
-                              // Square and landscape images - use existing calculation
-                              imageHeight =
-                                  MediaQuery.of(context).size.height * 0.45;
-                            }
-
-                            return ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: Image.file(
-                                File(imagePath!),
-                                height: imageHeight,
-                                width: double.infinity,
-                                fit: BoxFit.contain,
-                              ),
-                            );
-                          } else {
-                            // Default height while loading
-                            return ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: Image.file(
-                                File(imagePath!),
-                                height:
-                                    MediaQuery.of(context).size.height * 0.45,
-                                width: double.infinity,
-                                fit: BoxFit.contain,
-                              ),
-                            );
-                          }
-                        },
-                      ),
+                      _buildImageDisplay(context),
 
                     // Dynamic spacing based on image type
                     FutureBuilder<Size>(
@@ -244,6 +200,97 @@ class PredictionDetailsScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImageDisplay(BuildContext context) {
+    // Get the screen dimensions to calculate proper image display size
+    final screenSize = MediaQuery.of(context).size;
+    final imageMaxHeight =
+        screenSize.height * 0.4; // Limit image height to 40% of screen
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          constraints: BoxConstraints(
+            maxHeight: imageMaxHeight,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(60),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Center(
+            child: FutureBuilder<Size>(
+              future: _getImageDimensions(File(imagePath!)),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator(
+                    color: Color(0xFFF3E5AB),
+                  );
+                }
+
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return _buildImageWithFallback();
+                }
+
+                // Calculate if image is square, portrait, or landscape
+                final imageSize = snapshot.data!;
+                final aspectRatio = imageSize.width / imageSize.height;
+
+                return SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: AspectRatio(
+                    aspectRatio: aspectRatio,
+                    child: _buildImageWithFallback(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Helper method to get image dimensions before displaying
+  Future<Size> _getImageDimensions(File imageFile) async {
+    final Completer<Size> completer = Completer();
+    final image = Image.file(imageFile);
+    image.image.resolve(const ImageConfiguration()).addListener(
+      ImageStreamListener((ImageInfo info, bool _) {
+        completer.complete(Size(
+          info.image.width.toDouble(),
+          info.image.height.toDouble(),
+        ));
+      }),
+    );
+    return completer.future;
+  }
+
+  Widget _buildImageWithFallback() {
+    return Image.file(
+      File(imagePath!),
+      fit: BoxFit
+          .contain, // Changed from cover to contain to preserve aspect ratio
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: Colors.grey.shade300,
+          child: const Center(
+            child: Icon(
+              Icons.broken_image,
+              size: 64,
+              color: Colors.grey,
+            ),
+          ),
+        );
+      },
     );
   }
 
