@@ -17,6 +17,7 @@ import 'help_page.dart';
 import 'widgets/guide_book_button.dart';
 import 'widgets/guide_book_modal.dart'; // Add this import for GuideBookModal
 import 'utils/performance_monitor.dart'; // Import the performance monitor
+import 'widgets/custom_loading_screen.dart'; // Add this import
 
 void main() {
   runApp(const MyApp());
@@ -65,7 +66,7 @@ class BackgroundWrapper extends StatelessWidget {
   }
 }
 
-// 2. Loading Screen
+// 2. Loading Screen Wrapper
 class LoadingScreenWrapper extends StatefulWidget {
   const LoadingScreenWrapper({super.key});
 
@@ -81,7 +82,8 @@ class _LoadingScreenWrapperState extends State<LoadingScreenWrapper> {
   }
 
   Future<void> _navigateToHome() async {
-    await Future.delayed(const Duration(seconds: 15));
+    await Future.delayed(
+        const Duration(seconds: 3)); // Changed from 15 to 3 seconds
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
@@ -91,34 +93,7 @@ class _LoadingScreenWrapperState extends State<LoadingScreenWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return const LoadingScreen();
-  }
-}
-
-class LoadingScreen extends StatelessWidget {
-  const LoadingScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: BackgroundWrapper(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'images/chick2.png',
-                height: 150,
-              ),
-              const SizedBox(height: 20),
-              const CircularProgressIndicator(
-                color: Color.fromRGBO(128, 94, 2, 1),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return const CustomLoadingScreen();
   }
 }
 
@@ -137,7 +112,6 @@ class HomeViewState extends State<HomeView>
   int _selectedIndex = 0;
   int _navigationIndex = 0; // Track the current navigation bar index
   bool _isPermissionDialogVisible = false;
-  bool _isLoading = false; // Loading indicator
   ImageSource? _lastRequestedSource; // Track the last requested source
 
   final PerformanceMonitor _performanceMonitor = PerformanceMonitor();
@@ -530,9 +504,18 @@ class HomeViewState extends State<HomeView>
   }
 
   Future<void> _sendImageToServer(File imageFile) async {
-    setState(() {
-      _isLoading = true; // Show loading indicator
-    });
+    // Instead of setting _isLoading state, show the full-screen loading overlay
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      transitionDuration: Duration.zero,
+      barrierColor: Colors.transparent,
+      pageBuilder: (_, __, ___) {
+        return const CustomLoadingScreen(
+          message: "Analyzing chicken image...",
+        );
+      },
+    );
 
     // Start the timer for total round-trip time
     final Stopwatch timer = Stopwatch()..start();
@@ -567,10 +550,10 @@ class HomeViewState extends State<HomeView>
       await _performanceMonitor.stopCpuMonitoring();
       _performanceMonitor.stopFrameMonitoring();
 
-      // Hide loading indicator regardless of result
-      setState(() {
-        _isLoading = false;
-      });
+      // Close the loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -682,10 +665,11 @@ class HomeViewState extends State<HomeView>
       await _performanceMonitor.stopCpuMonitoring();
       _performanceMonitor.stopFrameMonitoring();
 
-      // Hide loading indicator and show error dialog
-      setState(() {
-        _isLoading = false;
-      });
+      // Close the loading dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
       if (!mounted) return;
       _showErrorDialog('Network error: ${e.toString()}');
     }
@@ -1152,40 +1136,25 @@ class HomeViewState extends State<HomeView>
               ],
             )
           : null, // No AppBar for other pages
-      body: Stack(
-        children: [
-          BackgroundWrapper(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              switchInCurve: Curves.easeInOut,
-              switchOutCurve: Curves.easeInOut,
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.1, 0.05),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                );
-              },
-              child: _widgetOptions[_selectedIndex],
-            ),
-          ),
-          if (_isLoading)
-            Container(
-              color: Colors.black.withAlpha(100),
-              width: double.infinity,
-              height: double.infinity,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFFF3E5AB),
-                ),
+      body: BackgroundWrapper(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeInOut,
+          switchOutCurve: Curves.easeInOut,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.1, 0.05),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
               ),
-            ),
-        ],
+            );
+          },
+          child: _widgetOptions[_selectedIndex],
+        ),
       ),
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(

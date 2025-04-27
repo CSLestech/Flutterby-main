@@ -216,16 +216,8 @@ class PredictionDetailsScreen extends StatelessWidget {
           constraints: BoxConstraints(
             maxHeight: imageMaxHeight,
           ),
-          decoration: BoxDecoration(
-            color: Colors.black,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(60),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
+          // Removed any decoration that might be adding black bars
+          // Previously there might have been a BoxDecoration with color: Colors.black here
           child: Center(
             child: FutureBuilder<Size>(
               future: _getImageDimensions(File(imagePath!)),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'onboardingscreen.dart'; // Import the OnboardingScreen
-import 'home_view.dart'; // Import the HomeView from home_view.dart
+import 'onboardingscreen.dart';
+import 'home_view.dart';
+import 'widgets/custom_loading_screen.dart'; // Add this import
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
@@ -36,7 +37,7 @@ class CadApp extends StatelessWidget {
         ),
         primarySwatch: Colors.purple,
       ),
-      home: const SplashScreen(), // Directly use SplashScreen
+      home: const SplashScreen(),
     );
   }
 }
@@ -87,14 +88,13 @@ class _SplashScreenState extends State<SplashScreen> {
       _onboardingComplete = onboardingComplete;
     });
 
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 3), () {
+      // Changed from 2 to 3 seconds
       if (!mounted) return;
       if (_onboardingComplete) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  const HomeView()), // Use HomeView from home_view.dart
+          MaterialPageRoute(builder: (context) => const HomeView()),
         );
       } else {
         Navigator.pushReplacement(
@@ -104,9 +104,7 @@ class _SplashScreenState extends State<SplashScreen> {
               onFinish: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          const HomeView()), // Use HomeView from home_view.dart
+                  MaterialPageRoute(builder: (context) => const HomeView()),
                 );
               },
             ),
@@ -119,8 +117,8 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
+      body: CustomLoadingScreen(
+        message: "Starting up...",
       ),
     );
   }
