@@ -527,8 +527,7 @@ class HomeViewState extends State<HomeView>
     dev.log("🔍 Starting image classification performance test",
         name: 'PerformanceTest');
 
-    final uri =
-        Uri.parse("https://flutterby-main-backend.onrender.com/predict");
+    final uri = Uri.parse("http://192.168.16.132:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
@@ -791,9 +790,9 @@ class HomeViewState extends State<HomeView>
     switch (prediction) {
       case "Consumable":
         return consumableIcon;
-      case "Half-Consumable":
+      case "Half-consumable":
         return halfConsumableIcon;
-      case "Not Consumable":
+      case "Not consumable":
         return notConsumableIcon;
       default:
         return defaultIcon;
@@ -804,9 +803,9 @@ class HomeViewState extends State<HomeView>
     switch (prediction) {
       case "Consumable":
         return Colors.green;
-      case "Half-Consumable":
+      case "Half-consumable":
         return Colors.orange;
-      case "Not Consumable":
+      case "Not consumable":
         return Colors.red;
       default:
         return Colors.grey;
