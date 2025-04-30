@@ -1,106 +1,118 @@
-import 'package:flutter/material.dart';
-import 'guide_book_button.dart';
-import 'package:flutter_tts/flutter_tts.dart';
-import 'dart:developer' as dev;
-import 'dart:async';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/material.dart'; // Core Flutter framework
+import 'guide_book_button.dart'; // Import for accessing guide content data
+import 'package:flutter_tts/flutter_tts.dart'; // Text-to-speech capabilities
+import 'dart:developer' as dev; // Advanced logging functionality
+import 'dart:async'; // For asynchronous operations
+import 'package:url_launcher/url_launcher.dart'; // For launching external URLs (videos)
 
+/// GuideBookModal is a dialog widget that presents educational content about chicken quality
+/// Features include multi-page content, responsive design, and text-to-speech capabilities
 class GuideBookModal extends StatefulWidget {
-  const GuideBookModal({super.key});
+  const GuideBookModal({super.key}); // Default constructor
 
   @override
-  State<GuideBookModal> createState() => _GuideBookModalState();
+  State<GuideBookModal> createState() =>
+      _GuideBookModalState(); // Create state object
 }
 
+/// State class for GuideBookModal that manages content pages and text-to-speech
 class _GuideBookModalState extends State<GuideBookModal> {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
-  int _totalPages = 0;
-  List<Map<String, dynamic>> _contentPages = [];
+  final PageController _pageController =
+      PageController(); // Controls page navigation
+  int _currentPage = 0; // Tracks which page is currently displayed
+  int _totalPages = 0; // Stores total number of pages in the guide
+  List<Map<String, dynamic>> _contentPages = []; // Holds all content data
 
   // Text to speech variables
-  FlutterTts? _flutterTts;
-  bool _isSpeaking = false;
-  String? _currentlyReadingText;
-  bool _ttsInitialized = false;
-  final double _volume = 1.0;
-  final double _pitch = 1.0;
-  final double _rate = 0.5;
-  final String _selectedLanguage = "en-US";
+  FlutterTts? _flutterTts; // TTS engine instance
+  bool _isSpeaking = false; // Tracks if TTS is currently active
+  String? _currentlyReadingText; // Currently being read text
+  bool _ttsInitialized = false; // Flag for successful TTS initialization
+  final double _volume = 1.0; // TTS volume (max)
+  final double _pitch = 1.0; // TTS pitch (normal)
+  final double _rate = 0.5; // TTS speech rate (slower for better comprehension)
+  final String _selectedLanguage = "en-US"; // TTS language
 
   @override
   void initState() {
     super.initState();
+    // Load content data from GuideBookContent class
     _contentPages = GuideBookContent.getContentPages();
+
+    // Calculate total pages by counting lessons and visual parameters
     _totalPages = _contentPages.isNotEmpty
         ? _contentPages[0]['visualParameters'].length +
             _contentPages[0]['lessons'].length
         : 0;
 
-    // Initialize TTS engine
+    // Initialize text-to-speech engine
     _initTts();
   }
 
-  // Initialize the text to speech engine with better error handling
+  /// Initialize the text to speech engine with robust error handling
   Future<void> _initTts() async {
-    dev.log("Initializing TTS...", name: 'TTS');
+    dev.log("Initializing TTS...", name: 'TTS'); // Log initialization start
 
     try {
-      _flutterTts = FlutterTts();
+      _flutterTts = FlutterTts(); // Create new TTS instance
 
-      // Set up TTS configuration
-      await _flutterTts!.setLanguage(_selectedLanguage);
-      await _flutterTts!.setSpeechRate(_rate);
-      await _flutterTts!.setVolume(_volume);
-      await _flutterTts!.setPitch(_pitch);
+      // Configure TTS settings for optimal readability
+      await _flutterTts!
+          .setLanguage(_selectedLanguage); // Set language to English
+      await _flutterTts!.setSpeechRate(_rate); // Set slower rate for clarity
+      await _flutterTts!.setVolume(_volume); // Set full volume
+      await _flutterTts!.setPitch(_pitch); // Set normal pitch
 
-      // Set handlers for TTS events
+      // Set handlers for TTS events to update UI accordingly
       _flutterTts!.setStartHandler(() {
-        dev.log("TTS Started", name: 'TTS');
+        dev.log("TTS Started", name: 'TTS'); // Log when speech starts
         setState(() {
-          _isSpeaking = true;
+          _isSpeaking = true; // Update UI to show speaking state
         });
       });
 
       _flutterTts!.setCompletionHandler(() {
-        dev.log("TTS Completed", name: 'TTS');
+        dev.log("TTS Completed", name: 'TTS'); // Log when speech completes
         setState(() {
-          _isSpeaking = false;
-          _currentlyReadingText = null;
+          _isSpeaking = false; // Update UI to show speech ended
+          _currentlyReadingText = null; // Clear current text
         });
       });
 
       _flutterTts!.setErrorHandler((error) {
-        dev.log("TTS Error: $error", name: 'TTS');
+        dev.log("TTS Error: $error", name: 'TTS'); // Log any TTS errors
         setState(() {
-          _isSpeaking = false;
-          _currentlyReadingText = null;
+          _isSpeaking = false; // Update UI on error
+          _currentlyReadingText = null; // Clear current text
         });
       });
 
-      // Mark TTS as initialized
+      // Mark TTS as successfully initialized
       setState(() {
         _ttsInitialized = true;
       });
 
       dev.log("TTS initialized successfully", name: 'TTS');
     } catch (e) {
-      dev.log("TTS Initialization Error: $e", name: 'TTS');
+      dev.log("TTS Initialization Error: $e",
+          name: 'TTS'); // Log initialization failure
       setState(() {
-        _ttsInitialized = false;
+        _ttsInitialized = false; // Mark TTS as not available
       });
-      _showTtsErrorDialog('$e');
+      _showTtsErrorDialog('$e'); // Show error to user
     }
   }
 
-  // Speak the given text with improved error handling
+  /// Speak the given text with error handling and chunking for long text
   Future<void> _speak(String text) async {
+    // Verify TTS is initialized or try to initialize it
     if (!_ttsInitialized || _flutterTts == null) {
       dev.log("TTS not initialized, attempting to initialize now", name: 'TTS');
       await _initTts();
       if (!_ttsInitialized) {
         dev.log("Failed to initialize TTS", name: 'TTS');
         if (mounted) {
+          // Notify user if TTS is unavailable
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("Text-to-speech not available"),
             duration: Duration(seconds: 2),
@@ -110,17 +122,19 @@ class _GuideBookModalState extends State<GuideBookModal> {
       }
     }
 
+    // If already speaking, stop current speech
     if (_isSpeaking) {
       await _stopSpeaking();
-      // If we were already reading the same text, just stop
+      // If requested to read the same text again, just stop (toggle behavior)
       if (_currentlyReadingText == text) {
         setState(() {
-          _currentlyReadingText = null;
+          _currentlyReadingText = null; // Clear current text
         });
         return;
       }
     }
 
+    // Validate text isn't empty
     if (text.trim().isEmpty) {
       dev.log("Empty text provided, nothing to speak", name: 'TTS');
       if (mounted) {
@@ -134,36 +148,39 @@ class _GuideBookModalState extends State<GuideBookModal> {
 
     try {
       setState(() {
-        _isSpeaking = true;
-        _currentlyReadingText = text;
+        _isSpeaking = true; // Update UI to show speaking state
+        _currentlyReadingText = text; // Store current text
       });
 
-      // First check for any pending speech and stop it
+      // Ensure any pending speech is stopped
       await _flutterTts!.stop();
 
-      // Break text into chunks if it's too long (helps with stability)
+      // For long text, break into chunks to improve stability
       if (text.length > 4000) {
-        // Logic for breaking text into reasonable chunks
+        // TTS engines often have limits on text length
+        // Break text into sentences for more natural pauses
         final sentences = text.split(RegExp(r'(?<=[.!?])\s+'));
         var currentChunk = "";
 
         for (var sentence in sentences) {
+          // Build chunks of reasonable size
           if ((currentChunk + sentence).length < 3900) {
             currentChunk += "$sentence ";
           } else {
-            // Speak the current chunk and wait for completion
+            // Speak current chunk and wait for completion
             await _flutterTts!.speak(currentChunk);
-            await Future.delayed(const Duration(milliseconds: 500));
-            currentChunk = "$sentence ";
+            await Future.delayed(const Duration(
+                milliseconds: 500)); // Brief pause between chunks
+            currentChunk = "$sentence "; // Start new chunk
           }
         }
 
-        // Speak the final chunk if any text remains
+        // Speak any remaining text
         if (currentChunk.isNotEmpty) {
           await _flutterTts!.speak(currentChunk);
         }
       } else {
-        // For shorter text, just speak it directly
+        // For shorter text, speak it all at once
         await _flutterTts!.speak(text);
       }
 
@@ -184,7 +201,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
     }
   }
 
-  // Show error dialog
+  /// Display error dialog when TTS fails to initialize
   void _showTtsErrorDialog(String error) {
     if (mounted) {
       showDialog(
@@ -203,13 +220,13 @@ class _GuideBookModalState extends State<GuideBookModal> {
     }
   }
 
-  // Stop speaking with improved error handling
+  /// Stop ongoing text-to-speech with error handling
   Future<void> _stopSpeaking() async {
     try {
       if (_flutterTts != null && _isSpeaking) {
-        await _flutterTts!.stop();
+        await _flutterTts!.stop(); // Stop the TTS engine
         setState(() {
-          _isSpeaking = false;
+          _isSpeaking = false; // Update UI state
         });
       }
     } catch (e) {
@@ -217,28 +234,29 @@ class _GuideBookModalState extends State<GuideBookModal> {
     }
   }
 
-  // Clean up resources
+  /// Clean up resources to prevent memory leaks
   @override
   void dispose() {
-    _pageController.dispose();
-    _stopTts();
+    _pageController.dispose(); // Dispose of page controller
+    _stopTts(); // Stop any ongoing TTS
     super.dispose();
   }
 
+  /// Properly clean up TTS resources
   Future<void> _stopTts() async {
     if (_flutterTts != null) {
       try {
-        await _flutterTts!.stop();
-        await _flutterTts!.awaitSpeakCompletion(false);
+        await _flutterTts!.stop(); // Stop any ongoing speech
+        await _flutterTts!.awaitSpeakCompletion(false); // Release resources
       } catch (e) {
         dev.log("Error disposing TTS: $e", name: 'TTS');
       }
     }
   }
 
-  // Helper method to get text to read for current page
+  /// Get the appropriate text to read aloud for the current page
   String _getTextToReadForCurrentPage() {
-    if (_contentPages.isEmpty) return '';
+    if (_contentPages.isEmpty) return ''; // No content to read
 
     final currentContent = _contentPages[0];
     final lessonLength = currentContent['lessons'].length;
@@ -246,7 +264,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
     String textToRead = '';
 
     if (_currentPage < lessonLength) {
-      // We're on a lesson page
+      // We're on a lesson page - format the lesson content for speech
       final lesson = currentContent['lessons'][_currentPage];
       textToRead =
           'Lesson ${lesson['number']}. ${lesson['title']}. ${lesson['content']} ';
@@ -261,7 +279,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
         }
       }
     } else {
-      // We're on a visual parameter page
+      // We're on a visual parameter page - format the parameter for speech
       final paramIndex = _currentPage - lessonLength;
       if (paramIndex < currentContent['visualParameters'].length) {
         final parameter = currentContent['visualParameters'][paramIndex];
@@ -269,150 +287,180 @@ class _GuideBookModalState extends State<GuideBookModal> {
       }
     }
 
-    return textToRead;
+    return textToRead; // Return formatted text for TTS
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get screen dimensions
+    // Get screen dimensions for responsive layout
     final screenSize = MediaQuery.of(context).size;
     final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;
 
-    // Set sizes based on screen dimensions
-    final bool isSmallScreen = screenWidth < 360;
-    final bool isVerySmallScreen = screenWidth < 320;
-    final bool isNarrowScreen = screenWidth < 400;
-    final bool isShortScreen = screenHeight < 700;
+    // Set responsive size variables based on screen dimensions
+    final bool isSmallScreen = screenWidth < 360; // Very narrow phone screens
+    final bool isVerySmallScreen =
+        screenWidth < 320; // Extremely narrow screens
+    final bool isNarrowScreen = screenWidth < 400; // Standard narrow screens
+    final bool isShortScreen = screenHeight < 700; // Shorter screen heights
 
     // Dynamic text sizing based on screen width
     final double titleSize = isVerySmallScreen
         ? 14.0
-        : (isSmallScreen ? 16.0 : (isNarrowScreen ? 17.0 : 18.0));
-    final double subtitleSize = isSmallScreen ? 12.0 : 14.0;
-    final double contentSize = isSmallScreen ? 14.0 : 16.0;
-    final double optionTitleSize = isSmallScreen ? 14.0 : 16.0;
-    final double optionDescSize = isSmallScreen ? 12.0 : 14.0;
-    final double buttonTextSize = isSmallScreen ? 12.0 : 14.0;
+        : (isSmallScreen
+            ? 16.0
+            : (isNarrowScreen ? 17.0 : 18.0)); // Largest for title
+    final double subtitleSize =
+        isSmallScreen ? 12.0 : 14.0; // Smaller for subtitle
+    final double contentSize =
+        isSmallScreen ? 14.0 : 16.0; // Main content text size
+    final double optionTitleSize =
+        isSmallScreen ? 14.0 : 16.0; // Option heading size
+    final double optionDescSize =
+        isSmallScreen ? 12.0 : 14.0; // Option description size
+    final double buttonTextSize =
+        isSmallScreen ? 12.0 : 14.0; // Size for button labels
 
     // Dynamic padding and spacing
-    final double dialogPadding =
-        isSmallScreen ? 8.0 : (isNarrowScreen ? 12.0 : 16.0);
-    final double contentPadding = isSmallScreen ? 6.0 : 8.0;
-    final double verticalSpacing = isShortScreen ? 6.0 : 10.0;
+    final double dialogPadding = isSmallScreen
+        ? 8.0
+        : (isNarrowScreen ? 12.0 : 16.0); // Outer dialog padding
+    final double contentPadding =
+        isSmallScreen ? 6.0 : 8.0; // Inner content padding
+    final double verticalSpacing =
+        isShortScreen ? 6.0 : 10.0; // Spacing between elements
 
     // Dynamic image height
-    final double imageHeight =
-        isShortScreen ? 120.0 : (isSmallScreen ? 150.0 : 180.0);
+    final double imageHeight = isShortScreen
+        ? 120.0
+        : (isSmallScreen ? 150.0 : 180.0); // Adjust image size for screen
 
+    // Build the dialog
     return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
+      backgroundColor: Colors.transparent, // Transparent background
+      elevation: 0, // No shadow
       insetPadding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.03, // 3% of screen width
-        vertical: screenHeight * 0.02, // 2% of screen height
+        horizontal: screenWidth * 0.03, // Small margin on sides (3% of screen)
+        vertical:
+            screenHeight * 0.02, // Small margin on top/bottom (2% of screen)
       ),
       child: Container(
-        width: screenWidth * 0.94, // 94% of screen width
-        height: screenHeight * 0.85, // 85% of screen height
+        width: screenWidth * 0.94, // Use 94% of screen width
+        height: screenHeight * 0.85, // Use 85% of screen height
         padding: EdgeInsets.all(dialogPadding),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
+          color: Colors.white, // White background for content
+          borderRadius: BorderRadius.circular(15), // Rounded corners
         ),
         child: Column(
           children: [
-            // Header with responsive spacing
+            // Header row with title and controls
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  flex: 5, // Give more space to the title
+                  flex: 5, // Give more space to title
                   child: Text(
                     _contentPages.isNotEmpty
-                        ? _contentPages[0]['title']
-                        : 'Guide Book',
+                        ? _contentPages[0]['title'] // Display guide title
+                        : 'Guide Book', // Fallback title
                     style: TextStyle(
                       fontSize: titleSize,
                       fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
-                    maxLines: isSmallScreen
-                        ? 2
-                        : 1, // Allow two lines on small screens
+                    maxLines:
+                        isSmallScreen ? 2 : 1, // Allow 2 lines on small screens
                   ),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Text-to-speech button
+                    // Text-to-speech button - toggles reading content aloud
                     IconButton(
                       icon: Icon(
                         _isSpeaking
-                            ? Icons.volume_up
-                            : Icons.volume_up_outlined,
-                        color: _isSpeaking ? Colors.blue : Colors.grey,
-                        size: isSmallScreen ? 18 : 22,
+                            ? Icons.volume_up // Shows solid icon when speaking
+                            : Icons
+                                .volume_up_outlined, // Shows outline when silent
+                        color: _isSpeaking
+                            ? Colors.blue
+                            : Colors.grey, // Blue when active
+                        size:
+                            isSmallScreen ? 18 : 22, // Smaller on small screens
                       ),
                       onPressed: () {
                         final text = _getTextToReadForCurrentPage();
                         if (_isSpeaking) {
-                          _stopSpeaking();
+                          _stopSpeaking(); // Stop if already speaking
                         } else {
-                          _speak(text);
+                          _speak(text); // Start reading text
                         }
                       },
-                      tooltip: _isSpeaking ? 'Stop Reading' : 'Read Aloud',
+                      tooltip: _isSpeaking
+                          ? 'Stop Reading'
+                          : 'Read Aloud', // Tooltip changes with state
                       constraints: BoxConstraints(
                           minWidth: isSmallScreen ? 32 : 40,
-                          minHeight: isSmallScreen ? 32 : 40),
-                      padding: EdgeInsets.all(isSmallScreen ? 4 : 6),
+                          minHeight: isSmallScreen
+                              ? 32
+                              : 40), // Minimum tap target size
+                      padding: EdgeInsets.all(isSmallScreen
+                          ? 4
+                          : 6), // Smaller padding on small screens
                     ),
                     // Close button
                     IconButton(
                       icon: Icon(
                         Icons.close,
-                        size: isSmallScreen ? 18 : 22,
+                        size:
+                            isSmallScreen ? 18 : 22, // Smaller on small screens
                       ),
                       onPressed: () {
                         _stopSpeaking(); // Stop speaking when closing
-                        Navigator.of(context).pop();
+                        Navigator.of(context).pop(); // Close the dialog
                       },
                       constraints: BoxConstraints(
                           minWidth: isSmallScreen ? 32 : 40,
-                          minHeight: isSmallScreen ? 32 : 40),
-                      padding: EdgeInsets.all(isSmallScreen ? 4 : 6),
+                          minHeight: isSmallScreen
+                              ? 32
+                              : 40), // Minimum tap target size
+                      padding: EdgeInsets.all(isSmallScreen
+                          ? 4
+                          : 6), // Smaller padding on small screens
                     ),
                   ],
                 ),
               ],
             ),
-            SizedBox(height: verticalSpacing / 2),
+            SizedBox(height: verticalSpacing / 2), // Half-space after header
+
             // Subtitle
             if (_contentPages.isNotEmpty &&
                 _contentPages[0]['subtitle'] != null)
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: dialogPadding / 2),
                 child: Text(
-                  _contentPages[0]['subtitle'],
+                  _contentPages[0]['subtitle'], // Display guide subtitle
                   style: TextStyle(
                     fontSize: subtitleSize,
                     fontStyle: FontStyle.italic,
                   ),
                   textAlign: TextAlign.center,
-                  maxLines: 3, // Allow more lines for subtitle
+                  maxLines: 3, // Allow up to 3 lines
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-            SizedBox(height: verticalSpacing),
-            // Page content
+            SizedBox(height: verticalSpacing), // Space after subtitle
+
+            // Main content - PageView for swiping between pages
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: _totalPages,
                 onPageChanged: (index) {
                   setState(() {
-                    _currentPage = index;
+                    _currentPage = index; // Update current page index
                     // Stop speaking when page changes
                     if (_isSpeaking) {
                       _stopSpeaking();
@@ -421,14 +469,15 @@ class _GuideBookModalState extends State<GuideBookModal> {
                 },
                 itemBuilder: (context, index) {
                   if (_contentPages.isEmpty) {
-                    return const Center(child: Text('No content available'));
+                    return const Center(
+                        child: Text('No content available')); // Empty state
                   }
 
                   final currentContent = _contentPages[0];
                   final lessonLength = currentContent['lessons'].length;
 
                   if (index < lessonLength) {
-                    // Lessons pages
+                    // Lessons pages - show lesson content, options, and images
                     final lesson = currentContent['lessons'][index];
                     return _buildLessonPage(
                         lesson,
@@ -438,7 +487,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
                         contentPadding,
                         imageHeight);
                   } else {
-                    // Visual parameters pages
+                    // Visual parameters pages - show visual guides and explanations
                     final paramIndex = index - lessonLength;
                     if (paramIndex <
                         currentContent['visualParameters'].length) {
@@ -448,47 +497,56 @@ class _GuideBookModalState extends State<GuideBookModal> {
                           imageHeight);
                     }
                   }
-                  return const Center(child: Text('Page not found'));
+                  return const Center(
+                      child:
+                          Text('Page not found')); // Fallback for invalid index
                 },
               ),
             ),
-            SizedBox(height: verticalSpacing / 2),
-            // Navigation controls
+            SizedBox(height: verticalSpacing / 2), // Space before navigation
+
+            // Navigation controls row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Back button
                 SizedBox(
-                  height: isSmallScreen ? 30 : 36,
+                  height: isSmallScreen ? 30 : 36, // Smaller on small screens
                   child: ElevatedButton(
                     onPressed: _currentPage > 0
                         ? () {
                             _pageController.previousPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
+                              duration: const Duration(
+                                  milliseconds: 300), // Animation duration
+                              curve: Curves.easeInOut, // Smooth animation curve
                             );
                           }
-                        : null,
+                        : null, // Disable on first page
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3E2C1C),
-                      foregroundColor: Colors.white,
+                      backgroundColor:
+                          const Color(0xFF3E2C1C), // Brown background
+                      foregroundColor: Colors.white, // White text
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius:
+                            BorderRadius.circular(8), // Rounded corners
                       ),
                       padding: EdgeInsets.symmetric(
-                        horizontal: isSmallScreen ? 6 : 10,
+                        horizontal: isSmallScreen
+                            ? 6
+                            : 10, // Smaller padding on small screens
                         vertical: isSmallScreen ? 2 : 4,
                       ),
                     ),
                     child: Text(
                       'Previous',
-                      style: TextStyle(fontSize: buttonTextSize),
+                      style: TextStyle(
+                          fontSize: buttonTextSize), // Responsive text size
                     ),
                   ),
                 ),
                 // Page indicator
                 Text(
-                  '${_currentPage + 1} / $_totalPages',
+                  '${_currentPage + 1} / $_totalPages', // Show current page number
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: buttonTextSize,
@@ -496,30 +554,36 @@ class _GuideBookModalState extends State<GuideBookModal> {
                 ),
                 // Forward button
                 SizedBox(
-                  height: isSmallScreen ? 30 : 36,
+                  height: isSmallScreen ? 30 : 36, // Smaller on small screens
                   child: ElevatedButton(
                     onPressed: _currentPage < _totalPages - 1
                         ? () {
                             _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
+                              duration: const Duration(
+                                  milliseconds: 300), // Animation duration
+                              curve: Curves.easeInOut, // Smooth animation curve
                             );
                           }
-                        : null,
+                        : null, // Disable on last page
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3E2C1C),
-                      foregroundColor: Colors.white,
+                      backgroundColor:
+                          const Color(0xFF3E2C1C), // Brown background
+                      foregroundColor: Colors.white, // White text
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius:
+                            BorderRadius.circular(8), // Rounded corners
                       ),
                       padding: EdgeInsets.symmetric(
-                        horizontal: isSmallScreen ? 6 : 10,
+                        horizontal: isSmallScreen
+                            ? 6
+                            : 10, // Smaller padding on small screens
                         vertical: isSmallScreen ? 2 : 4,
                       ),
                     ),
                     child: Text(
                       'Next',
-                      style: TextStyle(fontSize: buttonTextSize),
+                      style: TextStyle(
+                          fontSize: buttonTextSize), // Responsive text size
                     ),
                   ),
                 ),
@@ -531,6 +595,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
     );
   }
 
+  /// Build a lesson page with title, content, and formatted options
   Widget _buildLessonPage(
     Map<String, dynamic> lesson,
     double contentSize,
@@ -544,32 +609,34 @@ class _GuideBookModalState extends State<GuideBookModal> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Lesson ${lesson['number']}: ${lesson['title']}',
+            'Lesson ${lesson['number']}: ${lesson['title']}', // Formatted lesson title
             style: TextStyle(
-              fontSize: contentSize + 4,
+              fontSize: contentSize + 4, // Slightly larger than content text
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF3E2C1C),
+              color: const Color(0xFF3E2C1C), // Brown color for headings
             ),
           ),
           SizedBox(height: contentPadding),
           Text(
-            lesson['content'],
+            lesson['content'], // Main lesson content/description
             style: TextStyle(fontSize: contentSize),
           ),
-          SizedBox(height: contentPadding * 2),
+          SizedBox(height: contentPadding * 2), // Double spacing
 
           // Display the image below description if available
           if (lesson['image'] != null) ...[
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius:
+                  BorderRadius.circular(12), // Rounded corners for image
               child: AspectRatio(
-                aspectRatio: 16 / 9, // Maintain a consistent aspect ratio
+                aspectRatio: 16 / 9, // Consistent aspect ratio
                 child: SizedBox(
                   width: double.infinity,
                   child: Image.asset(
-                    lesson['image'],
-                    fit: BoxFit.cover,
+                    lesson['image'], // Load image from assets
+                    fit: BoxFit.cover, // Fill available space
                     errorBuilder: (context, error, stackTrace) {
+                      // Fallback for missing images
                       return Container(
                         width: double.infinity,
                         color: Colors.grey.shade200,
@@ -603,7 +670,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
           if (lesson['videoUrl'] != null && lesson['thumbnailUrl'] != null) ...[
             InkWell(
               onTap: () {
-                _launchYoutubeURL(lesson['videoUrl']);
+                _launchYoutubeURL(lesson['videoUrl']); // Open video when tapped
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -613,11 +680,12 @@ class _GuideBookModalState extends State<GuideBookModal> {
                     alignment: Alignment.center,
                     children: [
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius:
+                            BorderRadius.circular(12), // Rounded corners
                         child: AspectRatio(
-                          aspectRatio: 16 / 9,
+                          aspectRatio: 16 / 9, // Standard video aspect ratio
                           child: Image.network(
-                            lesson['thumbnailUrl'],
+                            lesson['thumbnailUrl'], // YouTube thumbnail
                             width: double.infinity,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
@@ -637,10 +705,10 @@ class _GuideBookModalState extends State<GuideBookModal> {
                         ),
                       ),
                       Container(
-                        width: 60,
+                        width: 60, // Fixed size for play button
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Colors.red,
+                          color: Colors.red, // YouTube red
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Center(
@@ -656,7 +724,8 @@ class _GuideBookModalState extends State<GuideBookModal> {
                   SizedBox(height: contentPadding),
                   // Video title
                   Text(
-                    lesson['videoTitle'] ?? 'Watch Video',
+                    lesson['videoTitle'] ??
+                        'Watch Video', // Title or default text
                     style: TextStyle(
                       fontSize: contentSize - 2,
                       fontWeight: FontWeight.bold,
@@ -669,21 +738,23 @@ class _GuideBookModalState extends State<GuideBookModal> {
             SizedBox(height: contentPadding * 2),
           ],
 
-          // Display lesson options
+          // Display lesson options (cards with information)
           if (lesson['options'] != null && lesson['options'] is List)
             ...lesson['options'].map<Widget>((option) {
               return Padding(
                 padding: EdgeInsets.only(bottom: contentPadding),
                 child: Card(
                   color: option['color'] != null
-                      ? (option['color'] as Color).withAlpha(25)
-                      : Colors.grey.shade100,
-                  elevation: 1,
+                      ? (option['color'] as Color).withAlpha(
+                          25) // Very light background based on option color
+                      : Colors.grey.shade100, // Default light grey
+                  elevation: 1, // Slight shadow
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8), // Rounded corners
                     side: BorderSide(
-                      color: option['color'] ?? Colors.grey,
-                      width: 1,
+                      color: option['color'] ??
+                          Colors.grey, // Border color matches option color
+                      width: 1, // Thin border
                     ),
                   ),
                   child: Padding(
@@ -696,9 +767,11 @@ class _GuideBookModalState extends State<GuideBookModal> {
                           children: [
                             if (option['icon'] != null)
                               Icon(
-                                option['icon'],
-                                color: option['color'],
-                                size: contentSize + 8,
+                                option['icon'], // Option-specific icon
+                                color: option[
+                                    'color'], // Icon color matches option color
+                                size: contentSize +
+                                    8, // Slightly larger than text
                               ),
                             SizedBox(width: contentPadding),
                             Expanded(
@@ -706,7 +779,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    option['text'],
+                                    option['text'], // Option title/heading
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: optionTitleSize,
@@ -714,7 +787,8 @@ class _GuideBookModalState extends State<GuideBookModal> {
                                   ),
                                   if (option['description'] != null)
                                     Text(
-                                      option['description'],
+                                      option[
+                                          'description'], // Option description
                                       style:
                                           TextStyle(fontSize: optionDescSize),
                                     ),
@@ -727,12 +801,13 @@ class _GuideBookModalState extends State<GuideBookModal> {
                         if (option['imagePath'] != null) ...[
                           SizedBox(height: contentPadding),
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(
+                                8), // Rounded corners for image
                             child: AspectRatio(
-                              aspectRatio: 16 / 9,
+                              aspectRatio: 16 / 9, // Consistent aspect ratio
                               child: Image.asset(
-                                option['imagePath'],
-                                fit: BoxFit.cover,
+                                option['imagePath'], // Load image from assets
+                                fit: BoxFit.cover, // Fill available space
                                 errorBuilder: (context, error, stackTrace) {
                                   return Container(
                                     height: 100,
@@ -760,6 +835,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
     );
   }
 
+  /// Build a visual parameter page with title, description, and image
   Widget _buildVisualParameterPage(
     Map<String, dynamic> parameter,
     double contentSize,
@@ -770,24 +846,24 @@ class _GuideBookModalState extends State<GuideBookModal> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            parameter['title'],
+            parameter['title'], // Parameter title
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF3E2C1C),
+              color: Color(0xFF3E2C1C), // Brown color for headings
             ),
           ),
           const SizedBox(height: 20),
           Text(
-            parameter['description'],
+            parameter['description'], // Detailed parameter description
             style: TextStyle(fontSize: contentSize),
           ),
           if (parameter['image'] != null) ...[
             const SizedBox(height: 20),
             Center(
               child: Image.asset(
-                parameter['image'],
-                height: imageHeight,
+                parameter['image'], // Load parameter image from assets
+                height: imageHeight, // Use responsive height
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return SizedBox(
@@ -809,16 +885,19 @@ class _GuideBookModalState extends State<GuideBookModal> {
     );
   }
 
+  /// Launch a YouTube URL in external browser or YouTube app
   void _launchYoutubeURL(String url) async {
     try {
-      final Uri uri = Uri.parse(url);
+      final Uri uri = Uri.parse(url); // Parse the string URL to URI
       if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        await launchUrl(uri,
+            mode: LaunchMode.externalApplication); // Launch in external app
       } else {
-        dev.log("Could not launch $url", name: 'URL Launcher');
+        dev.log("Could not launch $url", name: 'URL Launcher'); // Log failure
       }
     } catch (e) {
-      dev.log("Error launching URL: $e", name: 'URL Launcher');
+      dev.log("Error launching URL: $e",
+          name: 'URL Launcher'); // Log any errors
     }
   }
 }
