@@ -1,40 +1,55 @@
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart';
-import 'home_view.dart'; // Import the HomeView class
+// This file implements the onboarding screen that is shown to first-time users
+// It provides a tutorial walkthrough of the app's main features
 
+import 'package:flutter/material.dart'; // Import Material Design package
+import 'package:shared_preferences/shared_preferences.dart'; // Import for local data storage
+import 'package:flutter/services.dart'; // Import services for platform integration
+import 'home_view.dart'; // Import the main home view
+
+/// Main function - alternative entry point when running this file directly
 void main() async {
+  // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
-  final prefs = await SharedPreferences.getInstance();
-  final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
 
+  // Get access to shared preferences to check onboarding status
+  final prefs = await SharedPreferences.getInstance();
+  final onboardingComplete = prefs.getBool('onboarding_complete') ??
+      false; // Get status, default to false
+
+  // Configure system UI appearance
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      systemNavigationBarColor: Colors.transparent,
-      statusBarBrightness: Brightness.light,
-      statusBarColor: Colors.transparent,
+      systemNavigationBarColor:
+          Colors.transparent, // Transparent navigation bar
+      statusBarBrightness: Brightness.light, // Light status bar content
+      statusBarColor: Colors.transparent, // Transparent status bar background
     ),
   );
 
+  // Launch the app, passing onboarding status
   runApp(CadApp(onboardingComplete: onboardingComplete));
 }
 
+/// CadApp is the root widget of the application when launched from this file
 class CadApp extends StatelessWidget {
-  final bool onboardingComplete;
+  final bool
+      onboardingComplete; // Flag indicating if user has completed onboarding
 
+  // Constructor requiring onboarding status
   const CadApp({super.key, required this.onboardingComplete});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        debugShowCheckedModeBanner: false,
+        debugShowCheckedModeBanner: false, // Remove debug banner in the corner
         theme: ThemeData(
-          fontFamily: 'Garamond',
+          fontFamily: 'Garamond', // Set default font family for the app
         ),
         home: onboardingComplete
             ? const HomeView() // Navigate directly to HomeView if onboarding is complete
             : OnboardingScreen(
                 onFinish: () {
+                  // When onboarding finishes, navigate to home screen
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const HomeView()),
@@ -44,9 +59,12 @@ class CadApp extends StatelessWidget {
   }
 }
 
+/// OnboardingScreen displays a series of introductory slides about the app
 class OnboardingScreen extends StatefulWidget {
-  final VoidCallback onFinish;
+  final VoidCallback
+      onFinish; // Callback function for when onboarding completes
 
+  // Constructor requiring the completion callback
   const OnboardingScreen({super.key, required this.onFinish});
 
   @override
@@ -54,32 +72,36 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  final PageController _controller = PageController();
-  int _currentIndex = 0;
-  bool _showGetStartedButton = false;
+  final PageController _controller =
+      PageController(); // Controller for managing page transitions
+  int _currentIndex = 0; // Tracks the current page index
+  bool _showGetStartedButton =
+      false; // Controls visibility of the Get Started button
 
+  // List of onboarding slides with their images, titles, and descriptions
   final List<Map<String, String>> onboardingData = [
     {
-      "image": "images/ui/logo.png",
-      "title": "Welcome to Check-a-doodle-doo",
-      "description": "Snap, Analyze, and Stay Safe."
+      "image": "images/ui/logo.png", // App logo image
+      "title": "Welcome to Check-a-doodle-doo", // Welcome title
+      "description": "Snap, Analyze, and Stay Safe." // Brief app tagline
     },
     {
-      "image": "images/ui/scan.png",
-      "title": "Scan & Classify",
+      "image": "images/ui/scan.png", // Image showing scan functionality
+      "title": "Scan & Classify", // Feature title
       "description":
-          "Snap a photo of chicken meat, and let the system analyze its consumability!"
+          "Snap a photo of chicken meat, and let the system analyze its consumability!" // Feature description
     },
     {
-      "image": "images/ui/results.png",
-      "title": "Get Clear Results",
-      "description": "Classified into: Safe, Risky, or Not Consumable."
-    },
-    {
-      "image": "images/ui/food_safety.png",
-      "title": "Be Informed",
+      "image": "images/ui/results.png", // Image showing results screen
+      "title": "Get Clear Results", // Feature title
       "description":
-          "Be aware and make better decisions by checking the quality before cooking or eating."
+          "Classified into: Safe, Risky, or Not Consumable." // Feature description
+    },
+    {
+      "image": "images/ui/food_safety.png", // Image showing food safety concept
+      "title": "Be Informed", // Feature title
+      "description":
+          "Be aware and make better decisions by checking the quality before cooking or eating." // Feature description
     }
   ];
 
@@ -88,60 +110,69 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background image
+          // Background image layer
           Positioned.fill(
             child: Image.asset(
-              'images/ui/onboarding_bg.jpg',
-              fit: BoxFit.cover,
+              'images/ui/onboarding_bg.jpg', // Background image for onboarding
+              fit: BoxFit.cover, // Scale image to cover entire background
             ),
           ),
 
-          // Overlay content
+          // Onboarding content - slides that can be swiped through
           PageView.builder(
-            controller: _controller,
-            itemCount: onboardingData.length,
+            controller:
+                _controller, // Use the page controller for slide transitions
+            itemCount: onboardingData.length, // Number of slides
             onPageChanged: (index) {
-              setState(() => _currentIndex = index);
+              setState(() => _currentIndex =
+                  index); // Update the current index when page changes
 
               // Show the "Get Started" button after a delay when the last page is reached
               if (index == onboardingData.length - 1) {
                 Future.delayed(const Duration(seconds: 1), () {
                   if (mounted) {
+                    // Safety check that widget is still in tree
                     setState(() {
-                      _showGetStartedButton = true;
+                      _showGetStartedButton = true; // Show the button
                     });
                   }
                 });
               } else {
                 setState(() {
-                  _showGetStartedButton = false;
+                  _showGetStartedButton =
+                      false; // Hide the button on non-final pages
                 });
               }
             },
             itemBuilder: (context, index) {
-              final data = onboardingData[index];
+              final data = onboardingData[index]; // Get current slide data
               return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment:
+                    MainAxisAlignment.center, // Center content vertically
                 children: [
-                  Image.asset(data["image"]!, height: 300),
-                  const SizedBox(height: 20),
+                  Image.asset(data["image"]!,
+                      height: 300), // Display slide image
+                  const SizedBox(height: 20), // Add vertical spacing
                   Text(
-                    data["title"]!,
+                    data["title"]!, // Display slide title
                     style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 128, 94, 2),
+                      fontSize: 24, // Large text size
+                      fontWeight: FontWeight.bold, // Bold text
+                      color:
+                          Color.fromARGB(255, 128, 94, 2), // Golden brown color
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 10), // Add vertical spacing
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0), // Add horizontal padding
                     child: Text(
-                      data["description"]!,
-                      textAlign: TextAlign.center,
+                      data["description"]!, // Display slide description
+                      textAlign: TextAlign.center, // Center-align text
                       style: const TextStyle(
-                        fontSize: 16,
-                        color: Color.fromARGB(255, 125, 100, 0),
+                        fontSize: 16, // Medium text size
+                        color: Color.fromARGB(
+                            255, 125, 100, 0), // Golden brown color (lighter)
                       ),
                     ),
                   ),
@@ -150,25 +181,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             },
           ),
 
-          // Page indicator dots
+          // Page indicator dots at bottom of screen
           Align(
-            alignment: Alignment.bottomCenter,
+            alignment: Alignment.bottomCenter, // Position at bottom center
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 24.0),
+              padding:
+                  const EdgeInsets.only(bottom: 24.0), // Add bottom padding
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment:
+                    MainAxisAlignment.center, // Center dots horizontally
                 children: List.generate(
-                  onboardingData.length,
+                  onboardingData.length, // Generate dots for each slide
                   (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 3.0),
-                    height: 6.0,
-                    width: _currentIndex == index ? 12.0 : 6.0,
+                    duration: const Duration(
+                        milliseconds:
+                            300), // Animation duration for dot transitions
+                    margin: const EdgeInsets.symmetric(
+                        horizontal: 3.0), // Space between dots
+                    height: 6.0, // Dot height
+                    width: _currentIndex == index
+                        ? 12.0
+                        : 6.0, // Width varies based on if dot is active
                     decoration: BoxDecoration(
                       color: _currentIndex == index
-                          ? const Color.fromARGB(255, 122, 106, 0)
-                          : Colors.grey[400],
-                      borderRadius: BorderRadius.circular(3.0),
+                          ? const Color.fromARGB(255, 122, 106,
+                              0) // Active dot color - darker gold
+                          : Colors.grey[400], // Inactive dot color - light grey
+                      borderRadius: BorderRadius.circular(
+                          3.0), // Rounded corners for dots
                     ),
                   ),
                 ),
@@ -176,46 +216,52 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
 
-          // Get Started Button
+          // Get Started Button - only shown on the last slide
           if (_showGetStartedButton)
             Align(
-              alignment: Alignment.bottomCenter,
+              alignment: Alignment.bottomCenter, // Position at bottom center
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 70.0),
+                padding:
+                    const EdgeInsets.only(bottom: 70.0), // Add bottom padding
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 30, vertical: 15),
-                    backgroundColor: const Color.fromARGB(255, 170, 107, 0),
+                        horizontal: 30, vertical: 15), // Button padding
+                    backgroundColor: const Color.fromARGB(
+                        255, 170, 107, 0), // Golden brown button
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius:
+                          BorderRadius.circular(20), // Rounded button corners
                     ),
                   ),
                   onPressed: () async {
+                    // Save that onboarding is complete in shared preferences
                     final prefs = await SharedPreferences.getInstance();
                     await prefs.setBool('onboarding_complete', true);
-                    widget.onFinish();
+                    widget
+                        .onFinish(); // Call the provided callback to finish onboarding
                   },
                   child: const Text(
-                    "Get Started",
+                    "Get Started", // Button text
                     style: TextStyle(
-                      fontSize: 18,
-                      color: Color.fromARGB(255, 255, 255, 255),
+                      fontSize: 18, // Larger text size for button
+                      color: Color.fromARGB(255, 255, 255, 255), // White text
                     ),
                   ),
                 ),
               ),
             ),
 
-          // App version text
+          // App version text in bottom right corner
           const Positioned(
-            bottom: 10,
-            right: 10,
+            bottom: 10, // Position from bottom
+            right: 10, // Position from right
             child: Text(
-              "v1.0.0",
+              "v1.0.0", // Version number text
               style: TextStyle(
-                color: Color.fromARGB(179, 186, 174, 0),
-                fontSize: 12,
+                color: Color.fromARGB(
+                    179, 186, 174, 0), // Semi-transparent gold color
+                fontSize: 12, // Small text size
               ),
             ),
           ),

@@ -1,221 +1,265 @@
-import 'package:flutter/material.dart'; // Core Flutter framework
-import 'package:check_a_doodle_doo/background_wrapper.dart'; // Custom background with patterned texture
-import 'widgets/guide_book_button.dart'; // Button to access the app's guide book
+// This file defines the About page interface that displays information about the application
+// It contains a single widget class: AboutPage
 
-/// AboutPage displays information about the app and its developers
-/// This includes an app description and developer information with profile pictures
+import 'package:flutter/material.dart'; // Import Material Design package
+import 'widgets/guide_book_button.dart'; // Import custom GuideBookButton widget
+
+/// AboutPage widget displays information about the application, its purpose and developers
 class AboutPage extends StatelessWidget {
-  final VoidCallback onBackToHome; // Callback function to return to home screen
+  final VoidCallback
+      onBackToHome; // Callback function for back button navigation
 
-  // Constructor requiring the navigation callback
+  // Constructor requiring the back navigation callback
   const AboutPage({super.key, required this.onBackToHome});
 
   @override
   Widget build(BuildContext context) {
-    // List of team members with their images and names
-    List<Map<String, String>> members = [
-      {
-        'imagePath': 'images/dollano.jpg', // Path to developer profile image
-        'name': 'Dollano, Melissa Pola Anthony F.', // Developer's full name
-      },
-      {
-        'imagePath': 'images/devs/Enriquez.png',
-        'name': 'Enriquez, Leslie Ann E.',
-      },
-      {
-        'imagePath': 'images/devs/Oropesa.png',
-        'name': 'Oropesa, Ernest Marshal M.',
-      }
-    ];
-
-    // Apply consistent text styling to all text in this screen
-    return DefaultTextStyle(
-      style: const TextStyle(
-        fontFamily:
-            "Garamond", // App's primary font family for consistent branding
-        fontSize: 16, // Default text size
-        color:
-            Color(0xFF3E2C1C), // Dark brown text color for better readability
-      ),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF3E2C1C), // Dark brown app bar
-          elevation: 4, // Slight shadow for depth
-          iconTheme: const IconThemeData(
-              color: Color(0xFFF3E5AB)), // Light cream icons
-          titleTextStyle: const TextStyle(
-            color: Color(0xFFF3E5AB), // Light cream text color for contrast
-            fontFamily: 'Garamond', // Maintain consistent font family
-            fontSize: 22, // Larger text size for title
-            fontWeight: FontWeight.w600, // Semi-bold for emphasis
-          ),
-          title: const Text("About"), // Page title
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back), // Back navigation arrow
-            onPressed: onBackToHome, // Return to home page when pressed
-          ),
-          actions: const [
-            GuideBookButton(), // Include guide book access in app bar
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF3E2C1C), // Dark brown app bar
+        elevation: 4, // Add shadow beneath the app bar
+        iconTheme: const IconThemeData(
+            color: Color(0xFFF3E5AB)), // Light beige icon color
+        titleTextStyle: const TextStyle(
+          color: Color(0xFFF3E5AB), // Light beige text color
+          fontFamily: 'Garamond', // Custom font family
+          fontSize: 22, // Larger font size for title
+          fontWeight: FontWeight.w600, // Semi-bold font weight
         ),
-        body: BackgroundWrapper(
-          child: SingleChildScrollView(
-            // Allow scrolling if content doesn't fit screen
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0), // Side margins
+        title: const Text("About"), // Page title
+        leading: IconButton(
+          // Back button
+          icon: const Icon(Icons.arrow_back),
+          onPressed:
+              onBackToHome, // Call the provided callback to return to home
+        ),
+        actions: const [
+          GuideBookButton(), // Add guide book button to app bar
+        ],
+      ),
+      body: Stack(
+        children: [
+          // Background image layer
+          Positioned.fill(
+            child: Image.asset(
+              'images/ui/main_bg.png', // Background image path
+              fit: BoxFit.cover, // Scale image to cover entire background
+            ),
+          ),
+
+          // Semi-transparent overlay to improve text readability
+          Container(
+            color: Colors.black
+                .withAlpha(77), // Add dark overlay with transparency
+          ),
+
+          // Main about content
+          SingleChildScrollView(
+            // Make content scrollable
+            padding: const EdgeInsets.all(24.0), // Add padding around content
+            child: DefaultTextStyle(
+              // Set default text styling for all child text widgets
+              style: const TextStyle(
+                fontFamily: 'Garamond', // Set default font for all text
+                fontSize: 16, // Default text size
+                color: Color(0xFF3E2C1C), // Dark brown text color
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E5AB), // Light beige background
+                  borderRadius: BorderRadius.circular(16.0), // Rounded corners
+                ),
+                padding: const EdgeInsets.all(20.0), // Inner padding
                 child: Column(
                   crossAxisAlignment:
                       CrossAxisAlignment.start, // Left-align content
                   children: [
-                    const SizedBox(height: 20), // Top margin
-
-                    // About Section - contains app description
-                    Container(
-                      width: double.infinity, // Fill available width
-                      padding: const EdgeInsets.all(24), // Inner padding
-                      decoration: BoxDecoration(
-                        color:
-                            const Color(0xFFF3E5AB), // Light cream background
-                        borderRadius:
-                            BorderRadius.circular(20), // Rounded corners
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black
-                                .withAlpha(77), // Soft shadow (30% opacity)
-                            blurRadius: 10, // Shadow blur amount
-                            offset:
-                                const Offset(0, 4), // Shadow position (down)
+                    const Center(
+                      // Center-align the logo
+                      child: CircleAvatar(
+                        radius: 60, // Set logo size
+                        backgroundColor:
+                            Colors.white, // White background for logo
+                        child: ClipOval(
+                          child: Image(
+                            image: AssetImage(
+                                'images/ui/logo.png'), // App logo image
+                            width: 100, // Logo width
+                            height: 100, // Logo height
                           ),
-                        ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20), // Add vertical spacing
+
+                    // App title and version
+                    const Center(
+                      child: Text(
+                        "Check-a-doodle-doo",
+                        style: TextStyle(
+                          fontSize: 24, // Large title text
+                          fontWeight: FontWeight.bold, // Bold text
+                          color: Color(0xFF3E2C1C), // Dark brown text color
+                        ),
+                      ),
+                    ),
+                    const Center(
+                      child: Text(
+                        "Version 1.0.0", // App version number
+                        style: TextStyle(
+                          fontSize: 16, // Medium text size
+                          fontStyle: FontStyle.italic, // Italic style
+                          color: Color(0xFF3E2C1C), // Dark brown text color
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20), // Add vertical spacing
+
+                    // App description header
+                    const Text(
+                      "Description:",
+                      style: TextStyle(
+                        fontSize: 18, // Medium-large text size
+                        fontWeight: FontWeight.bold, // Bold text
+                        color: Color(0xFF3E2C1C), // Dark brown text color
+                      ),
+                    ),
+                    const SizedBox(height: 10), // Add vertical spacing
+
+                    // App description paragraphs
+                    const Text(
+                      "Check-a-doodle-doo is an application designed to help users determine if chicken is safe to consume based on its appearance.",
+                      style: TextStyle(
+                        fontSize: 16, // Medium text size
+                        color: Color(0xFF3E2C1C), // Dark brown text color
+                      ),
+                    ),
+                    const SizedBox(height: 10), // Add vertical spacing
+
+                    const Text(
+                      "Using machine learning technology, the application can analyze images of chicken meat and classify them into three categories: Consumable, Half-consumable, and Not consumable.",
+                      style: TextStyle(
+                        fontSize: 16, // Medium text size
+                        color: Color(0xFF3E2C1C), // Dark brown text color
+                      ),
+                    ),
+                    const SizedBox(height: 20), // Add vertical spacing
+
+                    // Features section header
+                    const Text(
+                      "Features:",
+                      style: TextStyle(
+                        fontSize: 18, // Medium-large text size
+                        fontWeight: FontWeight.bold, // Bold text
+                        color: Color(0xFF3E2C1C), // Dark brown text color
+                      ),
+                    ),
+                    const SizedBox(height: 10), // Add vertical spacing
+
+                    // Feature list with bullet points
+                    _buildFeatureItem(
+                        "Take photos of chicken meat for analysis"),
+                    _buildFeatureItem("Upload existing photos from gallery"),
+                    _buildFeatureItem("Get instant classification results"),
+                    _buildFeatureItem("View history of previous analyses"),
+                    _buildFeatureItem(
+                        "User-friendly interface with detailed help"),
+                    const SizedBox(height: 20), // Add vertical spacing
+
+                    // Developers section header
+                    const Text(
+                      "Developed by:",
+                      style: TextStyle(
+                        fontSize: 18, // Medium-large text size
+                        fontWeight: FontWeight.bold, // Bold text
+                        color: Color(0xFF3E2C1C), // Dark brown text color
+                      ),
+                    ),
+                    const SizedBox(height: 10), // Add vertical spacing
+
+                    // Developer information
+                    const Text(
+                      "Team Chicken Tenders", // Development team name
+                      style: TextStyle(
+                        fontSize: 16, // Medium text size
+                        fontWeight: FontWeight.bold, // Bold text
+                        color: Color(0xFF3E2C1C), // Dark brown text color
+                      ),
+                    ),
+                    const SizedBox(height: 5), // Add small vertical spacing
+
+                    const Text(
+                      "For educational purposes only.", // Disclaimer text
+                      style: TextStyle(
+                        fontSize: 14, // Smaller text size
+                        fontStyle: FontStyle.italic, // Italic style
+                        color: Color(0xFF3E2C1C), // Dark brown text color
+                      ),
+                    ),
+                    const SizedBox(height: 20), // Add vertical spacing
+
+                    // Disclaimer section
+                    Container(
+                      padding: const EdgeInsets.all(
+                          10), // Add padding inside container
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withAlpha(
+                            51), // Light orange background (opacity 0.2 ≈ 51/255)
+                        borderRadius:
+                            BorderRadius.circular(8), // Rounded corners
+                        border:
+                            Border.all(color: Colors.orange), // Orange border
                       ),
                       child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start, // Left-align content
                         children: [
                           Text(
-                            "About the App", // Section heading
+                            "Disclaimer:", // Disclaimer header
                             style: TextStyle(
-                              color: Color(0xFF3E2C1C), // Dark brown text
-                              fontWeight: FontWeight.bold, // Bold for emphasis
-                              fontSize: 22, // Larger size for heading
+                              fontSize: 16, // Medium text size
+                              fontWeight: FontWeight.bold, // Bold text
+                              color: Color(0xFF3E2C1C), // Dark brown text color
                             ),
                           ),
-                          SizedBox(
-                              height:
-                                  16), // Spacing between heading and content
+                          SizedBox(height: 5), // Add small vertical spacing
                           Text(
-                            "Check-a-doodle-doo is a mobile application designed to help users assess the consumability of chicken breast...", // App description (truncated text)
-                            textAlign:
-                                TextAlign.justify, // Full text justification
+                            "This app provides an estimate based on visual appearance and should not be the sole factor in determining food safety. Always use proper food handling practices and when in doubt, throw it out.", // Disclaimer text
                             style: TextStyle(
-                              height: 1.5, // Line height for better readability
-                              color: Color(0xFF3E2C1C), // Dark brown text
+                              fontSize: 14, // Smaller text size
+                              color: Color(0xFF3E2C1C), // Dark brown text color
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 28), // Spacing between sections
-
-                    // Developers Section - displays team member information
-                    Container(
-                      width: double.infinity, // Fill available width
-                      padding: const EdgeInsets.all(20), // Inner padding
-                      decoration: BoxDecoration(
-                        color: const Color(
-                            0xFFF3E5AB), // Light cream background (same as above)
-                        borderRadius:
-                            BorderRadius.circular(20), // Rounded corners
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(77), // Soft shadow
-                            blurRadius: 10, // Shadow blur amount
-                            offset:
-                                const Offset(0, 4), // Shadow position (down)
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Developers", // Section heading
-                            style: TextStyle(
-                              color: Color(0xFF3E2C1C), // Dark brown text
-                              fontWeight: FontWeight.bold, // Bold for emphasis
-                              fontSize: 22, // Larger size for heading
-                            ),
-                          ),
-                          const SizedBox(height: 20), // Spacing after heading
-                          // Generate developer cards for each team member
-                          ...members.map((member) => MemberCard(
-                                imagePath:
-                                    member['imagePath']!, // Profile image path
-                                name: member['name']!, // Developer name
-                              )),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 40), // Bottom margin
                   ],
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
-}
 
-/// MemberCard widget displays a developer's profile picture and name
-/// Used to create consistent developer entries in the About page
-class MemberCard extends StatelessWidget {
-  final String imagePath; // Path to the developer's profile image
-  final String name; // Developer's full name
-
-  // Constructor requiring image path and name
-  const MemberCard({
-    super.key,
-    required this.imagePath,
-    required this.name,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
+  /// Helper method to build a feature list item with a bullet point
+  Widget _buildFeatureItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0), // Add space below each item
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start, // Align items to the top
         children: [
-          // Circular profile picture
-          ClipOval(
-            // Clip image to circular shape
-            child: Image.asset(
-              imagePath, // Load image from assets
-              fit: BoxFit.cover, // Crop image to fill container
-              height: 100, // Fixed height for consistency
-              width: 100, // Fixed width for perfect circle
-            ),
-          ),
-          const SizedBox(height: 5), // Spacing between image and name
-          // Developer name with responsive width
-          SizedBox(
-            width: MediaQuery.of(context).size.width > 400
-                ? 300 // Fixed width on larger screens
-                : MediaQuery.of(context).size.width *
-                    0.8, // 80% of screen width on smaller screens
+          const Text("• ",
+              style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.bold)), // Bullet point
+          Expanded(
+            // Allow text to fill remaining space and wrap if needed
             child: Text(
-              name, // Developer name
-              textAlign: TextAlign.center, // Center-align text
-              style: const TextStyle(
-                color: Color(0xFF3E2C1C), // Dark brown text
-                fontWeight: FontWeight.w500, // Medium weight for readability
-                fontSize: 14, // Smaller text size for names
-              ),
+              text, // Feature description text
+              style: const TextStyle(fontSize: 16), // Medium text size
             ),
           ),
-          const SizedBox(height: 20), // Bottom spacing between developers
         ],
       ),
     );

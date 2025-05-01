@@ -44,7 +44,7 @@ class CustomLoadingScreen extends StatelessWidget {
           const SizedBox(
               height: 30), // Vertical spacing between logo and app name
 
-          // App name text - explicitly no text decoration to avoid underline
+          // App name text - explicitly no text decoration to avoid
           const Text(
             "Check-a-Doodle-Doo", // Name of the app displayed on loading screen
             style: TextStyle(

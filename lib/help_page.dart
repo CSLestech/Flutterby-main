@@ -1,35 +1,43 @@
-import 'package:flutter/material.dart';
-import 'widgets/guide_book_button.dart';
+// This file implements the help page interface that provides user guidance on how to use the application
+// It contains two main widget classes: HelpStep and HelpPage
 
+import 'package:flutter/material.dart'; // Import Material Design package
+import 'widgets/guide_book_button.dart'; // Import custom GuideBookButton widget
+
+/// HelpStep widget represents a single help instruction with an image and text
 class HelpStep extends StatelessWidget {
-  final String imagePath;
-  final String text;
+  final String imagePath; // Path to the image for this help step
+  final String text; // Descriptive text explaining this step
 
+  // Constructor requiring image path and text with an optional key parameter
   const HelpStep(this.imagePath, this.text, {super.key});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24.0),
+      padding: const EdgeInsets.only(bottom: 24.0), // Add space below each step
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+            CrossAxisAlignment.start, // Align content to the left
         children: [
           Text(
-            text,
+            text, // Display the step instruction text
             style: const TextStyle(
-              color: Color(0xFF3E2C1C), // Dark brown text
-              fontSize: 16,
+              color: Color(0xFF3E2C1C), // Dark brown text color
+              fontSize: 16, // Set text size
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(
+              height: 12), // Add vertical spacing between text and image
           Center(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius:
+                  BorderRadius.circular(12), // Rounded corners for the image
               child: Image.asset(
-                imagePath,
-                fit: BoxFit.cover,
-                height: 180,
-                width: 300,
+                imagePath, // Display the help step image
+                fit: BoxFit.cover, // Scale image to cover the given dimensions
+                height: 180, // Fixed image height
+                width: 300, // Fixed image width
               ),
             ),
           ),
@@ -39,77 +47,85 @@ class HelpStep extends StatelessWidget {
   }
 }
 
+/// HelpPage widget displays the full help guide with multiple steps
 class HelpPage extends StatelessWidget {
-  final VoidCallback onBackToHome;
+  final VoidCallback onBackToHome; // Callback function for back button
 
+  // Constructor requiring the back navigation callback
   const HelpPage({super.key, required this.onBackToHome});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF3E2C1C),
-        elevation: 4,
-        iconTheme: const IconThemeData(color: Color(0xFFF3E5AB)),
+        backgroundColor: const Color(0xFF3E2C1C), // Dark brown app bar
+        elevation: 4, // Add shadow beneath the app bar
+        iconTheme: const IconThemeData(
+            color: Color(0xFFF3E5AB)), // Light beige icon color
         titleTextStyle: const TextStyle(
-          color: Color(0xFFF3E5AB),
-          fontFamily: 'Garamond',
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
+          color: Color(0xFFF3E5AB), // Light beige text color
+          fontFamily: 'Garamond', // Custom font family
+          fontSize: 22, // Larger font size for title
+          fontWeight: FontWeight.w600, // Semi-bold font weight
         ),
-        title: const Text("Help"),
+        title: const Text("Help"), // Page title
         leading: IconButton(
+          // Back button
           icon: const Icon(Icons.arrow_back),
-          onPressed: onBackToHome,
+          onPressed:
+              onBackToHome, // Call the provided callback to return to home
         ),
         actions: const [
-          GuideBookButton(),
+          GuideBookButton(), // Add guide book button to app bar
         ],
       ),
       body: Stack(
         children: [
-          // Background image
+          // Background image layer
           Positioned.fill(
             child: Image.asset(
-              'images/ui/main_bg.png',
-              fit: BoxFit.cover,
+              'images/ui/main_bg.png', // Background image path
+              fit: BoxFit.cover, // Scale image to cover entire background
             ),
           ),
 
-          // Dark overlay
+          // Semi-transparent overlay to improve text readability
           Container(
-            color: Colors.black.withAlpha(77),
+            color: Colors.black
+                .withAlpha(77), // Add dark overlay with transparency
           ),
 
-          // Help content
+          // Main help content
           DefaultTextStyle(
             style: const TextStyle(
-              fontFamily: 'Garamond',
-              fontSize: 16,
-              color: Color(0xFF3E2C1C),
+              fontFamily: 'Garamond', // Set default font for all text
+              fontSize: 16, // Default text size
+              color: Color(0xFF3E2C1C), // Dark brown text color
             ),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              // Make content scrollable
+              padding: const EdgeInsets.all(24.0), // Add padding around content
               child: Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFFF3E5AB), // Light beige background
-                  borderRadius: BorderRadius.circular(16.0),
+                  borderRadius: BorderRadius.circular(16.0), // Rounded corners
                 ),
-                padding: const EdgeInsets.all(20.0),
+                padding: const EdgeInsets.all(20.0), // Inner padding
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start, // Left-align content
                   children: [
                     const Text(
-                      "How to use the application:",
+                      "How to use the application:", // Section title
                       style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3E2C1C),
+                        fontSize: 24, // Large title text
+                        fontWeight: FontWeight.bold, // Bold text
+                        color: Color(0xFF3E2C1C), // Dark brown text color
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 20), // Add vertical spacing
 
-                    // Help Steps
+                    // List of help steps with images and instructions
                     const HelpStep(
                       'images/help/step1.png',
                       "1. Click on the camera icon to take a picture or select an image from the gallery.",

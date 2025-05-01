@@ -1,37 +1,43 @@
-import 'package:flutter/material.dart'; // Core Flutter UI framework
+// This file defines the BackgroundWrapper widget that provides consistent background styling
+// It's used across multiple screens to maintain visual consistency in the app
 
-/// BackgroundWrapper creates a consistent visual background for application screens
-/// It applies a textured background image with an optional darker overlay for better readability of foreground content
+import 'package:flutter/material.dart'; // Import Material Design package
+
+/// BackgroundWrapper applies a consistent background style to child widgets
+/// It includes a background image and optional semi-transparent overlay for better readability
 class BackgroundWrapper extends StatelessWidget {
-  final Widget
-      child; // The foreground content to display on top of the background
+  final Widget child; // The child widget to display on top of the background
+  final bool
+      showOverlay; // Whether to show a semi-transparent overlay over the background
 
-  /// Constructor requiring the foreground child widget
-  const BackgroundWrapper({super.key, required this.child});
+  // Constructor requiring child widget with optional overlay parameter
+  const BackgroundWrapper({
+    super.key,
+    required this.child,
+    this.showOverlay = true, // Default to showing the overlay
+  });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
-      // Stack widget to layer background, overlay, and content
       children: [
-        // Background image - fills the entire screen
-        SizedBox.expand(
-          // Expand to fill available space
+        // Background image layer - positioned to fill the entire container
+        Positioned.fill(
           child: Image.asset(
-            'images/ui/main_bg.png', // Path to the background texture image
-            fit: BoxFit
-                .cover, // Scale image to cover the entire area without distortion
+            'images/ui/main_bg.png', // Background image path
+            fit: BoxFit.cover, // Scale image to cover entire background
           ),
         ),
 
-        // Optional overlay - adds slight darkening for better foreground visibility
-        Container(
-          color: Colors.black
-              .withAlpha(77), // Semi-transparent black (30% opacity)
-        ),
+        // Optional semi-transparent overlay to improve text readability
+        if (showOverlay)
+          Container(
+            color:
+                Colors.black.withAlpha(100), // Semi-transparent black overlay
+          ),
 
-        // The foreground content
-        child, // Display the provided widget on top of background and overlay
+        // The main content displayed on top of the background
+        child,
       ],
     );
   }

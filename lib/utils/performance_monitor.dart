@@ -78,8 +78,9 @@ class PerformanceMonitor {
   void _simulateCpuMonitoring() {
     // Use a periodic reading approach instead of isolates
     Future.doWhile(() async {
-      if (!_isCpuMonitoringActive)
+      if (!_isCpuMonitoringActive) {
         return false; // Stop if monitoring is no longer active
+      }
 
       try {
         // Get simulated CPU usage
@@ -201,8 +202,9 @@ class PerformanceMonitor {
   /// Get whether CPU usage is under the 25% threshold
   /// Returns true if average CPU usage is within acceptable limits
   bool isCpuUsageWithinThreshold() {
-    if (_cpuReadings.isEmpty)
+    if (_cpuReadings.isEmpty) {
       return true; // No readings means no problems detected
+    }
 
     // Calculate average CPU usage
     final avg = _cpuReadings.reduce((a, b) => a + b) / _cpuReadings.length;
@@ -212,8 +214,9 @@ class PerformanceMonitor {
   /// Get whether the app is responsive (average FPS >= 30)
   /// Returns true if frame rate is smooth
   bool isAppResponsive() {
-    if (_frameDurations.isEmpty)
+    if (_frameDurations.isEmpty) {
       return true; // No readings means no problems detected
+    }
 
     // Calculate average frame duration in milliseconds
     final avgMs =
