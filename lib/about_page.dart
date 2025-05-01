@@ -179,13 +179,28 @@ class AboutPage extends StatelessWidget {
 
                     // Developer information
                     const Text(
-                      "Team Chicken Tenders", // Development team name
+                      "Tipian Students", // Development team name
                       style: TextStyle(
                         fontSize: 16, // Medium text size
                         fontWeight: FontWeight.bold, // Bold text
                         color: Color(0xFF3E2C1C), // Dark brown text color
                       ),
                     ),
+                    const SizedBox(height: 10), // Add vertical spacing
+
+                    // Individual developer profiles with images
+                    _buildDeveloperProfile(
+                        name: "Leslie Ann Enriquez",
+                        role: "Main Developer",
+                        imagePath: "images/devs/Enriquez.png"),
+                    _buildDeveloperProfile(
+                        name: "Ernest Marshal Oropesa",
+                        role: "UI/UX Designer",
+                        imagePath: "images/devs/Oropesa.png"),
+                    _buildDeveloperProfile(
+                        name: "Melissa Dollano",
+                        role: "ML Engineer",
+                        imagePath: "images/dollano.jpg"),
                     const SizedBox(height: 5), // Add small vertical spacing
 
                     const Text(
@@ -258,6 +273,56 @@ class AboutPage extends StatelessWidget {
             child: Text(
               text, // Feature description text
               style: const TextStyle(fontSize: 16), // Medium text size
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Helper method to build a developer profile with image and details
+  Widget _buildDeveloperProfile({
+    required String name,
+    required String role,
+    required String imagePath,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        children: [
+          // Developer profile image
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: Colors.white,
+            backgroundImage: AssetImage(imagePath),
+            onBackgroundImageError: (exception, stackTrace) {
+              // Fallback if image fails to load
+              return;
+            },
+          ),
+          const SizedBox(width: 12),
+          // Developer details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF3E2C1C),
+                  ),
+                ),
+                Text(
+                  role,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                    color: Color(0xFF3E2C1C),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

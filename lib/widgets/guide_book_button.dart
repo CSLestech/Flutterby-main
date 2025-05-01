@@ -30,7 +30,7 @@ class GuideBookContent {
                 'description':
                     'chicken that is safe to eat with normal cooking methods', // Detailed explanation
                 'imagePath':
-                    'images/consumable204.jpg', // Example image of consumable chicken
+                    'images/ui/consumable204.jpg', // Example image of consumable chicken
               },
               {
                 'text': 'Half-Consumable', // Second classification category
@@ -39,7 +39,7 @@ class GuideBookContent {
                 'description':
                     'Chicken showing early signs of deterioration but can still be safely eaten if thoroughly cooked', // Detailed explanation
                 'imagePath':
-                    'images/halfconsumable195.jpg', // Example image of half-consumable chicken
+                    'images/ui/halfconsumable195.jpg', // Example image of half-consumable chicken
               },
               {
                 'text': 'Not Consumable', // Third classification category
@@ -48,7 +48,7 @@ class GuideBookContent {
                 'description':
                     'Spoiled chicken that should not be consumed under any circumstances', // Safety warning
                 'imagePath':
-                    'images/notconsumable408.jpg', // Example image of spoiled chicken
+                    'images/ui/notconsumable408.jpg', // Example image of spoiled chicken
               },
             ],
           },
