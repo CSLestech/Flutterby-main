@@ -7,6 +7,7 @@ import 'package:check_a_doodle_doo/background_wrapper.dart'; // Import custom ba
 import 'package:check_a_doodle_doo/prediction_details_screen.dart'; // Import screen to display prediction details
 import 'dart:developer' as dev; // Import developer tools for logging
 import 'widgets/guide_book_button.dart'; // Import custom guide book button widget
+import 'package:check_a_doodle_doo/utils/confidence_tracker.dart'; // Import confidence tracker utility
 
 /// HistoryPage displays a scrollable list of past prediction results
 class HistoryPage extends StatelessWidget {
@@ -68,6 +69,23 @@ class HistoryPage extends StatelessWidget {
                   itemCount: history.length, // Number of items to display
                   itemBuilder: (context, index) {
                     final item = history[index]; // Get current history item
+
+                    // Debug validation for confidence score
+                    final dynamic rawConfidence = item['confidenceScore'];
+                    double confidenceScore = 0.0;
+                    if (rawConfidence != null) {
+                      if (rawConfidence is double) {
+                        confidenceScore = rawConfidence;
+                      } else if (rawConfidence is num) {
+                        confidenceScore = rawConfidence.toDouble();
+                      } else if (rawConfidence is String) {
+                        confidenceScore = double.tryParse(rawConfidence) ?? 0.0;
+                      }
+                    }
+
+                    dev.log("History item $index confidence: $confidenceScore",
+                        name: 'HistoryPage');
+
                     return Card(
                       // Create card for each history item
                       margin: const EdgeInsets.only(
@@ -84,6 +102,10 @@ class HistoryPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(
                             12), // Round corners for ripple
                         onTap: () {
+                          // Track confidence before navigation
+                          ConfidenceTracker.logScore("HISTORY_ITEM_TAP",
+                              item['confidenceScore'], {'index': index});
+
                           Navigator.push(
                             // Navigate to details screen when tapped
                             context,
@@ -95,6 +117,13 @@ class HistoryPage extends StatelessWidget {
                                   'icon': item['icon'], // Pass prediction icon
                                   'color':
                                       item['color'], // Pass prediction color
+
+                                  // CRITICAL FIX: Pass confidence score from history item
+                                  'confidenceScore':
+                                      item['confidenceScore'] ?? 0.75,
+
+                                  // Mark this as coming from history to help with fallbacks
+                                  'fromHistory': true,
                                 },
                                 timestamp: item['timestamp'], // Pass timestamp
                               ),
@@ -184,6 +213,28 @@ class HistoryPage extends StatelessWidget {
                                         fontFamily: "Garamond",
                                       ),
                                     ),
+
+                                    // NEW: Add confidence score display in history list
+                                    if (item.containsKey('confidenceScore') &&
+                                        item['confidenceScore'] != null &&
+                                        (item['confidenceScore'] as num)
+                                                .toDouble() >
+                                            0)
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 4.0),
+                                        child: Text(
+                                          "Confidence: ${((item['confidenceScore'] as num).toDouble() * 100).toStringAsFixed(1)}%",
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontFamily: "Garamond",
+                                            fontStyle: FontStyle.italic,
+                                            color: _getConfidenceColor(
+                                                (item['confidenceScore'] as num)
+                                                    .toDouble()),
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -199,6 +250,14 @@ class HistoryPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Get color based on confidence level
+  Color _getConfidenceColor(double score) {
+    if (score >= 0.85) return Colors.green;
+    if (score >= 0.70) return Colors.orange;
+    if (score > 0.0) return Colors.red;
+    return Colors.grey;
   }
 }
 

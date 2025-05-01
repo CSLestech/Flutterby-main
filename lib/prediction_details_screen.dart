@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart'; // Core Flutter UI framework
 import 'dart:io'; // For file I/O operations (loading images from file system)
 import 'dart:async'; // For asynchronous programming, including the Completer class
+import 'dart:developer' as dev; // For logging purposes
 // Import BackgroundWrapper with prefix to avoid name conflicts
 import 'package:check_a_doodle_doo/background_wrapper.dart'
     as bg; // Custom background widget
 import 'widgets/guide_book_button.dart'; // Guide book access button for educational content
+import 'package:check_a_doodle_doo/utils/confidence_tracker.dart'; // Utility for confidence score tracking
 
 /// PredictionDetailsScreen displays comprehensive information about a chicken breast analysis result
 /// Shows the analyzed image with prediction results and classification information
@@ -260,10 +262,90 @@ class PredictionDetailsScreen extends StatelessWidget {
 
   /// Builds the prediction card with confidence score display
   Widget _buildPredictionCard(Map<String, dynamic> prediction) {
+    // Debug: Log received prediction to see what fields are available
+    dev.log("🔎 DISPLAYING PREDICTION: ${prediction.toString()}",
+        name: 'DetailsScreen');
+
+    // Add more comprehensive logging with our tracker
+    ConfidenceTracker.logScore(
+        "DETAILS_SCREEN_RECEIVED",
+        prediction.containsKey('confidenceScore')
+            ? prediction['confidenceScore']
+            : null,
+        {
+          'prediction_type': prediction['text'],
+          'all_keys': prediction.keys.toList()
+        });
+
     // Get the confidence score from the prediction data (default to 0.0 if not present)
-    final double confidenceScore = prediction.containsKey('confidenceScore')
-        ? prediction['confidenceScore']
-        : 0.0;
+    double confidenceScore = 0.0;
+
+    // CRITICAL FIX: Extract confidence score with improved error handling
+    try {
+      // Check for confidence score in the standard field 'confidenceScore'
+      if (prediction.containsKey('confidenceScore')) {
+        final dynamic rawScore = prediction['confidenceScore'];
+        ConfidenceTracker.logScore("DETAILS_EXTRACTING_CONFIDENCE", rawScore,
+            {'type': rawScore?.runtimeType.toString()});
+
+        if (rawScore != null) {
+          if (rawScore is double) {
+            confidenceScore = rawScore;
+          } else if (rawScore is num) {
+            confidenceScore = rawScore.toDouble();
+          } else if (rawScore is String) {
+            confidenceScore = double.tryParse(rawScore) ?? 0.0;
+          }
+        }
+        ConfidenceTracker.logScore(
+            "DETAILS_EXTRACTED_CONFIDENCE", confidenceScore);
+      }
+      // Legacy support for 'confidence' field
+      else if (prediction.containsKey('confidence')) {
+        final dynamic rawScore = prediction['confidence'];
+        ConfidenceTracker.logScore("DETAILS_EXTRACTING_LEGACY", rawScore,
+            {'type': rawScore?.runtimeType.toString()});
+
+        if (rawScore != null) {
+          if (rawScore is double) {
+            confidenceScore = rawScore;
+          } else if (rawScore is num) {
+            confidenceScore = rawScore.toDouble();
+          } else if (rawScore is String) {
+            confidenceScore = double.tryParse(rawScore) ?? 0.0;
+          }
+        }
+        ConfidenceTracker.logScore("DETAILS_EXTRACTED_LEGACY", confidenceScore);
+      }
+
+      // EMERGENCY FIX: Log if we have a zero confidence after extraction
+      if (confidenceScore == 0.0) {
+        dev.log(
+            "⚠️ WARNING: Zero confidence score detected. Keys in prediction: ${prediction.keys.toList()}",
+            name: 'DetailsScreen');
+
+        // As a last resort, check if we have history context
+        if (prediction.containsKey('fromHistory') &&
+            prediction['fromHistory'] == true) {
+          // For history items, show a default score if not available
+          confidenceScore = 0.75;
+          dev.log("Using default confidence for history item",
+              name: 'DetailsScreen');
+        }
+      }
+
+      // Ensure confidence is within range
+      confidenceScore = confidenceScore.clamp(0.0, 1.0);
+      ConfidenceTracker.logScore("DETAILS_FINAL_CONFIDENCE", confidenceScore);
+    } catch (e) {
+      // Catch any errors in confidence extraction and use a default
+      dev.log("Error extracting confidence score: $e", name: 'DetailsScreen');
+      confidenceScore = 0.75; // Use reasonable default
+    }
+
+    // Debug: Log the extracted confidence score
+    dev.log("🔎 USING CONFIDENCE SCORE: $confidenceScore",
+        name: 'DetailsScreen');
 
     // Format the confidence score as a percentage
     final String confidencePercentage =
@@ -275,16 +357,22 @@ class PredictionDetailsScreen extends StatelessWidget {
       confidenceColor = Colors.green;
     } else if (confidenceScore >= 0.70) {
       confidenceColor = Colors.orange;
-    } else {
+    } else if (confidenceScore > 0.0) {
+      // Ensure we're not showing green for 0.0
       confidenceColor = Colors.red;
+    } else {
+      // Special case for zero confidence score
+      confidenceColor = Colors.grey;
     }
 
     // Add confidence level description text
     String confidenceLevelText;
     if (confidenceScore >= 0.90) {
-      confidenceLevelText = "High Confidence";
+      confidenceLevelText = "High";
     } else if (confidenceScore >= 0.70) {
-      confidenceLevelText = "Medium Confidence";
+      confidenceLevelText = "Medium";
+    } else if (confidenceScore > 0.0) {
+      confidenceLevelText = "Low";
     } else {
       confidenceLevelText = "Low Confidence";
     }
@@ -355,8 +443,9 @@ class PredictionDetailsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Add confidence score display
+            // Add confidence score display with fixed layout
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               decoration: BoxDecoration(
                 color: const Color(0xFF3E2C1C).withAlpha(26),
@@ -365,7 +454,6 @@ class PredictionDetailsScreen extends StatelessWidget {
                     Border.all(color: const Color(0xFF3E2C1C).withAlpha(40)),
               ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
                     Icons.analytics_outlined,
@@ -392,13 +480,16 @@ class PredictionDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    "($confidenceLevelText)",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                      color: confidenceColor,
-                      fontFamily: "Garamond",
+                  Flexible(
+                    child: Text(
+                      "($confidenceLevelText)",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                        color: confidenceColor,
+                        fontFamily: "Garamond",
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],

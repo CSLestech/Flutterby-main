@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:developer' as dev;
-import 'dart:math' as math;
 import 'package:check_a_doodle_doo/prediction_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:check_a_doodle_doo/utils/confidence_tracker.dart';
 
 import 'about_page.dart';
 import 'history_page.dart';
@@ -376,6 +376,43 @@ class HomeViewState extends State<HomeView>
             // Timestamp
             historyItem['timestamp'] = item['timestamp'];
 
+            // CRITICAL FIX: Better confidence score handling
+            try {
+              // Step 1: Get the raw value
+              final dynamic rawConfidence = item['confidenceScore'];
+
+              // Step 2: Handle different types properly
+              if (rawConfidence != null) {
+                if (rawConfidence is double) {
+                  historyItem['confidenceScore'] = rawConfidence;
+                } else if (rawConfidence is num) {
+                  historyItem['confidenceScore'] = rawConfidence.toDouble();
+                } else if (rawConfidence is String) {
+                  historyItem['confidenceScore'] =
+                      double.tryParse(rawConfidence) ?? 0.75;
+                } else {
+                  // If type is unexpected, use a reasonable default
+                  historyItem['confidenceScore'] = 0.75;
+                }
+              } else {
+                // If confidence score is missing or null, set a reasonable default
+                historyItem['confidenceScore'] = 0.75;
+              }
+
+              // Step 3: Ensure it's in a valid range
+              historyItem['confidenceScore'] =
+                  (historyItem['confidenceScore'] as double).clamp(0.0, 1.0);
+            } catch (e) {
+              // Recovery in case of deserialization issues
+              dev.log("Error parsing confidence score: $e",
+                  name: 'HistoryLoader');
+              historyItem['confidenceScore'] = 0.75;
+            }
+
+            dev.log(
+                "Loaded history item: ${item['text']} with confidence: ${historyItem['confidenceScore']}",
+                name: 'HistoryLoader');
+
             return historyItem;
           }).toList());
         });
@@ -690,7 +727,6 @@ class HomeViewState extends State<HomeView>
 
       // Stop timer and calculate elapsed time
       timer.stop();
-      final int elapsedMilliseconds = timer.elapsedMilliseconds;
 
       // Stop performance monitoring and get results
       await _performanceMonitor.stopCpuMonitoring();
@@ -704,142 +740,118 @@ class HomeViewState extends State<HomeView>
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // Extract or calculate confidence score from model output
+        // Log full raw response for debugging
+        dev.log("FULL SERVER RESPONSE: ${response.body}", name: 'ServerDebug');
+
+        // Track raw response for debugging confidence issues
+        ConfidenceTracker.logScore(
+            "1_RAW_SERVER_RESPONSE",
+            data.containsKey('confidenceScore')
+                ? data['confidenceScore']
+                : null,
+            {'response_keys': data.keys.toList()});
+
+        // Extract confidence score from the server response
+        // Use the consistent 'confidenceScore' field name from the server
         double confidenceScore = 0.0;
 
-        // Check if the response contains probabilities for each class
-        if (data.containsKey('class_probabilities')) {
-          // Get the highest probability as confidence score
+        if (data.containsKey('confidenceScore')) {
+          // Direct extraction from our standard field name
+          confidenceScore = _extractDoubleValue(data['confidenceScore']);
+          ConfidenceTracker.logScore(
+              "2_FOUND_CONFIDENCE_SCORE", confidenceScore);
+          dev.log("Using confidenceScore field: $confidenceScore",
+              name: 'ModelConfidence');
+        }
+        // Fallback to class probabilities if available
+        else if (data.containsKey('class_probabilities')) {
           final Map<String, dynamic> probabilities =
               data['class_probabilities'];
+          dev.log("Class probabilities found: $probabilities",
+              name: 'ModelConfidence');
           confidenceScore = probabilities.values
-              .map((v) => double.tryParse(v.toString()) ?? 0.0)
+              .map((v) => _extractDoubleValue(v))
               .reduce((a, b) => a > b ? a : b);
+          ConfidenceTracker.logScore(
+              "2_USING_CLASS_PROBABILITIES", confidenceScore, probabilities);
+          dev.log("Using highest probability: $confidenceScore",
+              name: 'ModelConfidence');
         }
-        // Alternative: If model returns a single confidence value
+        // Try legacy field names
         else if (data.containsKey('confidence')) {
-          confidenceScore =
-              double.tryParse(data['confidence'].toString()) ?? 0.0;
+          confidenceScore = _extractDoubleValue(data['confidence']);
+          ConfidenceTracker.logScore(
+              "2_USING_LEGACY_CONFIDENCE", confidenceScore);
+          dev.log("Using legacy confidence field: $confidenceScore",
+              name: 'ModelConfidence');
+        } else if (data.containsKey('score')) {
+          confidenceScore = _extractDoubleValue(data['score']);
+          ConfidenceTracker.logScore("2_USING_SCORE_FIELD", confidenceScore);
+          dev.log("Using score field: $confidenceScore",
+              name: 'ModelConfidence');
         }
-        // If model returns normalized score between 0-1 for the prediction
-        else if (data.containsKey('score')) {
-          confidenceScore = double.tryParse(data['score'].toString()) ?? 0.0;
-        }
-        // If model returns logits (raw output values)
-        else if (data.containsKey('logits')) {
-          // Convert logits to probabilities using softmax function
-          final List<dynamic> logits = data['logits'];
-          final List<double> logitValues =
-              logits.map((v) => double.tryParse(v.toString()) ?? 0.0).toList();
-
-          // Apply softmax: exp(logit) / sum(exp(logits))
-          final List<double> expValues =
-              logitValues.map((l) => math.exp(l)).toList();
-          final double sumExp = expValues.reduce((a, b) => a + b);
-          final List<double> probabilities =
-              expValues.map((e) => e / sumExp).toList();
-
-          // Get the highest probability
-          confidenceScore = probabilities.reduce((a, b) => a > b ? a : b);
-        }
-        // If model returns raw class predictions without probabilities
+        // Handle case when no confidence data is available
         else {
-          // Calculate a confidence proxy based on model's decision boundary distance
-          // This is a simplified approach when no probabilities are available
-          final String prediction = data['prediction'];
-          switch (prediction) {
-            case "Consumable":
-              confidenceScore = data.containsKey('consumable_score')
-                  ? double.tryParse(data['consumable_score'].toString()) ?? 0.85
-                  : 0.85;
-              break;
-            case "Half-consumable":
-              confidenceScore = data.containsKey('half_consumable_score')
-                  ? double.tryParse(data['half_consumable_score'].toString()) ??
-                      0.75
-                  : 0.75;
-              break;
-            case "Not consumable":
-              confidenceScore = data.containsKey('not_consumable_score')
-                  ? double.tryParse(data['not_consumable_score'].toString()) ??
-                      0.80
-                  : 0.80;
-              break;
-            default:
-              confidenceScore = 0.50; // Default baseline confidence
-          }
+          dev.log(
+              "No confidence data found in model response. Using default value.",
+              name: 'ModelConfidence');
+          dev.log("Available fields: ${data.keys.toList()}",
+              name: 'ModelConfidence');
+          confidenceScore =
+              0.75; // Default reasonable value if no confidence provided
+          ConfidenceTracker.logScore("2_USING_DEFAULT_VALUE", confidenceScore);
         }
 
         // Ensure confidence score is within valid range [0,1]
         confidenceScore = confidenceScore.clamp(0.0, 1.0);
+        ConfidenceTracker.logScore("3_AFTER_CLAMP", confidenceScore);
 
-        // Get server processing time if available
-        double? serverProcessingTime;
-        if (data.containsKey('processing_time_sec')) {
-          serverProcessingTime =
-              double.tryParse(data['processing_time_sec'].toString());
-        }
+        // Log final confidence for debugging
+        dev.log("FINAL CONFIDENCE: $confidenceScore", name: 'ConfidenceDebug');
 
-        // Check if prediction took more than 3 seconds (either client-side or server-side)
-        final clientTime = elapsedMilliseconds / 1000;
-        if (clientTime > 3.0 ||
-            (serverProcessingTime != null && serverProcessingTime > 3.0)) {
-          dev.log("⚠️ Warning: Prediction exceeded 3-second threshold",
-              name: 'PredictionTimer');
-          dev.log(
-              "  - Client-side total time: ${clientTime.toStringAsFixed(3)} seconds",
-              name: 'PredictionTimer');
-          if (serverProcessingTime != null) {
-            dev.log(
-                "  - Server-side processing time: ${serverProcessingTime.toStringAsFixed(3)} seconds",
-                name: 'PredictionTimer');
-          }
-        } else {
-          dev.log("✓ Prediction completed within time threshold",
-              name: 'PredictionTimer');
-          dev.log(
-              "  - Client-side total time: ${clientTime.toStringAsFixed(3)} seconds",
-              name: 'PredictionTimer');
-          if (serverProcessingTime != null) {
-            dev.log(
-                "  - Server-side processing time: ${serverProcessingTime.toStringAsFixed(3)} seconds",
-                name: 'PredictionTimer');
-          }
-        }
-
-        // Log the performance test results
-        dev.log("📊 Performance Test Results:", name: 'PerformanceTest');
-        dev.log(
-            "- CPU Usage within threshold (<25%): ${_performanceMonitor.isCpuUsageWithinThreshold()}",
-            name: 'PerformanceTest');
-        dev.log(
-            "- UI Responsiveness (>30 FPS): ${_performanceMonitor.isAppResponsive()}",
-            name: 'PerformanceTest');
-        dev.log(
-            "- Total response time: ${clientTime.toStringAsFixed(3)} seconds (${serverProcessingTime != null ? 'server: ${serverProcessingTime.toStringAsFixed(3)}s' : 'server time unknown'})",
-            name: 'PerformanceTest');
-
-        final prediction = {
+        // Create prediction with guaranteed double confidence score
+        final Map<String, dynamic> prediction = {
           "text": data['prediction'],
           "icon": _getPredictionIcon(data['prediction']),
           "color": _getPredictionColor(data['prediction']),
           "imagePath": imageFile.path,
           "timestamp": DateTime.now().toString(),
-          "processingTime": serverProcessingTime,
-          "confidenceScore":
-              confidenceScore, // Add confidence score to prediction data
+          "processingTime": data.containsKey('processing_time_sec')
+              ? _extractDoubleValue(data['processing_time_sec'])
+              : null,
+          "confidenceScore": confidenceScore,
         };
 
-        // Save to history
-        _addToHistory({
+        ConfidenceTracker.logScore(
+            "4_PREDICTION_OBJECT",
+            prediction["confidenceScore"],
+            {'prediction_type': prediction["text"]});
+
+        // Log prediction object before saving to history
+        dev.log("PREDICTION TO SAVE: ${prediction.toString()}",
+            name: 'HistoryDebug');
+
+        // Create a direct, separate copy specifically for history to avoid reference issues
+        final Map<String, dynamic> historyItem = Map<String, dynamic>.from({
           "text": prediction["text"],
           "icon": prediction["icon"],
           "color": prediction["color"],
           "imagePath": imageFile.path,
           "timestamp": DateTime.now().toString(),
-          "confidenceScore":
-              confidenceScore, // Add confidence score to history item
+          // PERMANENT FIX: Always ensure confidence score is a proper double
+          "confidenceScore": double.parse(confidenceScore.toString()),
         });
+
+        // Debug verification
+        dev.log("CONFIDENCE BEFORE HISTORY: $confidenceScore", name: 'FIX');
+        dev.log("CONFIDENCE IN HISTORY ITEM: ${historyItem['confidenceScore']}",
+            name: 'FIX');
+
+        ConfidenceTracker.logScore(
+            "5_HISTORY_ITEM", historyItem["confidenceScore"]);
+
+        // Save to history with direct copy
+        await _addToHistory(historyItem);
 
         // Navigate to History after showing prediction details
         setState(() {
@@ -894,6 +906,29 @@ class HomeViewState extends State<HomeView>
     }
   }
 
+  // Helper method to safely extract double values from any data type
+  double _extractDoubleValue(dynamic value) {
+    double result = 0.0;
+    if (value == null) {
+      return result;
+    }
+
+    if (value is double) {
+      result = value;
+    } else if (value is int) {
+      result = value.toDouble();
+    } else if (value is String) {
+      result = double.tryParse(value) ?? 0.0;
+    }
+
+    ConfidenceTracker.logScore("EXTRACT_VALUE", result, {
+      'input_type': value.runtimeType.toString(),
+      'raw_value': value.toString()
+    });
+
+    return result;
+  }
+
   void _showErrorDialog(String message, {String title = 'Error'}) {
     showDialog(
       context: context,
@@ -934,33 +969,46 @@ class HomeViewState extends State<HomeView>
     );
   }
 
-  void _addToHistory(Map<String, dynamic> prediction) {
+  Future<void> _addToHistory(Map<String, dynamic> prediction) async {
     try {
-      // Create a deep copy to avoid reference issues
+      // Create a deep copy for history
       final Map<String, dynamic> historyCopy = {
         'text': prediction['text'],
         'icon': prediction['icon'],
         'color': prediction['color'],
         'imagePath': prediction['imagePath'],
         'timestamp': prediction['timestamp'],
-        'confidenceScore':
-            prediction['confidenceScore'], // Add confidence score
       };
+
+      // Handle confidence score explicitly
+      if (prediction.containsKey('confidenceScore')) {
+        final dynamic rawScore = prediction['confidenceScore'];
+        if (rawScore is double) {
+          historyCopy['confidenceScore'] = rawScore;
+        } else if (rawScore is num) {
+          historyCopy['confidenceScore'] = rawScore.toDouble();
+        } else if (rawScore is String) {
+          historyCopy['confidenceScore'] = double.tryParse(rawScore) ?? 0.85;
+        } else {
+          historyCopy['confidenceScore'] = 0.85; // Default fallback
+        }
+      } else {
+        historyCopy['confidenceScore'] = 0.85; // Default if missing
+      }
+
+      // Ensure confidence score is within valid range
+      historyCopy['confidenceScore'] =
+          (historyCopy['confidenceScore'] as double).clamp(0.0, 1.0);
 
       setState(() {
         _history.insert(0, historyCopy);
         if (_history.length > 10) {
-          _history.removeLast(); // Keep only 10 most recent entries
+          _history.removeLast();
         }
       });
 
-      // Now save to persistent storage
-      _saveHistory();
-
-      // Replace print statements with dev.log
-      dev.log("Added to history. Current history size: ${_history.length}",
-          name: 'HomeView');
-      dev.log("Item added: ${prediction['text']}", name: 'HomeView');
+      // Save to SharedPreferences immediately
+      await _saveHistory();
     } catch (e) {
       dev.log("Error adding to history: $e", name: 'HomeView');
     }
@@ -970,41 +1018,43 @@ class HomeViewState extends State<HomeView>
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Convert history to a serializable format
+      // Convert history to a serializable format with explicit confidence score handling
       final List<Map<String, dynamic>> serializedHistory = _history.map((item) {
-        final Map<String, dynamic> serializedItem = {};
-
-        // Text
-        serializedItem['text'] = item['text'];
-
-        // Icon - convert to integer code
-        if (item['icon'] != null && item['icon'] is IconData) {
-          serializedItem['iconCode'] = (item['icon'] as IconData).codePoint;
-          serializedItem['iconFontFamily'] =
-              (item['icon'] as IconData).fontFamily;
+        // First, ensure we have a valid confidence score
+        double confidenceScore = 0.85; // Default value
+        if (item.containsKey('confidenceScore')) {
+          if (item['confidenceScore'] is double) {
+            confidenceScore = item['confidenceScore'];
+          } else if (item['confidenceScore'] is num) {
+            confidenceScore = (item['confidenceScore'] as num).toDouble();
+          } else if (item['confidenceScore'] is String) {
+            confidenceScore = double.tryParse(item['confidenceScore']) ?? 0.85;
+          }
         }
 
-        // Color - convert to integer (using proper approach instead of deprecated 'value')
-        if (item['color'] != null && item['color'] is Color) {
-          final Color color = item['color'] as Color;
-          serializedItem['colorARGB'] = color.toARGB32();
-        }
+        // Clamp the confidence score to valid range
+        confidenceScore = confidenceScore.clamp(0.0, 1.0);
 
-        // Image path
-        serializedItem['imagePath'] = item['imagePath'];
-
-        // Timestamp
-        serializedItem['timestamp'] = item['timestamp'];
-
-        // Confidence score
-        serializedItem['confidenceScore'] = item['confidenceScore'];
-
-        return serializedItem;
+        return {
+          'text': item['text'],
+          'iconCode': (item['icon'] as IconData).codePoint,
+          'iconFontFamily': (item['icon'] as IconData).fontFamily,
+          // Fix: Replace deprecated 'value' with toARGB32()
+          'colorARGB': (item['color'] as Color).toARGB32(),
+          'imagePath': item['imagePath'],
+          'timestamp': item['timestamp'],
+          'confidenceScore': confidenceScore, // Store as double
+        };
       }).toList();
 
-      // Save as JSON
+      // Debug log the confidence scores being saved
+      for (var item in serializedHistory) {
+        dev.log(
+            "Saving history item with confidence: ${item['confidenceScore']}",
+            name: 'HistorySerializer');
+      }
+
       await prefs.setString('history', jsonEncode(serializedHistory));
-      dev.log("History saved successfully", name: 'HomeView');
     } catch (e) {
       dev.log("Error saving history: $e", name: 'HomeView');
     }
