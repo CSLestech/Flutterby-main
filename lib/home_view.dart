@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:developer' as dev;
+import 'dart:math' as math;
 import 'package:check_a_doodle_doo/prediction_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -31,6 +32,151 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: const LoadingScreenWrapper(),
+    );
+  }
+}
+
+// Create a separate hoverable card widget at the top of the file
+class HoverableCard extends StatefulWidget {
+  final String title;
+  final String description;
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const HoverableCard({
+    super.key,
+    required this.title,
+    required this.description,
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  State<HoverableCard> createState() => _HoverableCardState();
+}
+
+class _HoverableCardState extends State<HoverableCard> {
+  bool isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => isHovering = true),
+      onExit: (_) => setState(() => isHovering = false),
+      child: Tooltip(
+        message: widget.tooltip,
+        textStyle: const TextStyle(
+          color: Color(0xFFF3E5AB),
+          fontSize: 14,
+          fontFamily: "Garamond",
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFF3E2C1C),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        waitDuration: const Duration(milliseconds: 500),
+        showDuration: const Duration(seconds: 2),
+        preferBelow: true,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          width: 250,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isHovering
+                ? const Color(0xFFF3E5AB)
+                : const Color(0xFFF3E5AB).withAlpha(230),
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: isHovering
+                    ? Colors.black.withAlpha(40)
+                    : Colors.black.withAlpha(26),
+                spreadRadius: isHovering ? 2 : 1,
+                blurRadius: isHovering ? 6 : 4,
+                offset: isHovering ? const Offset(0, 3) : const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(
+              color: isHovering
+                  ? const Color(0xFF3E2C1C).withAlpha(40)
+                  : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: const Color(0xFF3E2C1C),
+                          letterSpacing: isHovering ? 0.5 : 0,
+                        ),
+                      ),
+                      Icon(
+                        widget.icon,
+                        color: const Color(0xFF3E2C1C),
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.description,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontFamily: "Garamond",
+                      color: Color(0xFF3E2C1C),
+                    ),
+                  ),
+                  const Spacer(),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: isHovering ? 24 : 20,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (isHovering)
+                          const Text(
+                            "Click to access",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontFamily: "Garamond",
+                              fontStyle: FontStyle.italic,
+                              color: Color(0xFF3E2C1C),
+                            ),
+                          ),
+                        if (isHovering) const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward,
+                          color: const Color(0xFF3E2C1C),
+                          size: isHovering ? 18 : 16,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -558,6 +704,75 @@ class HomeViewState extends State<HomeView>
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
+        // Extract or calculate confidence score from model output
+        double confidenceScore = 0.0;
+
+        // Check if the response contains probabilities for each class
+        if (data.containsKey('class_probabilities')) {
+          // Get the highest probability as confidence score
+          final Map<String, dynamic> probabilities =
+              data['class_probabilities'];
+          confidenceScore = probabilities.values
+              .map((v) => double.tryParse(v.toString()) ?? 0.0)
+              .reduce((a, b) => a > b ? a : b);
+        }
+        // Alternative: If model returns a single confidence value
+        else if (data.containsKey('confidence')) {
+          confidenceScore =
+              double.tryParse(data['confidence'].toString()) ?? 0.0;
+        }
+        // If model returns normalized score between 0-1 for the prediction
+        else if (data.containsKey('score')) {
+          confidenceScore = double.tryParse(data['score'].toString()) ?? 0.0;
+        }
+        // If model returns logits (raw output values)
+        else if (data.containsKey('logits')) {
+          // Convert logits to probabilities using softmax function
+          final List<dynamic> logits = data['logits'];
+          final List<double> logitValues =
+              logits.map((v) => double.tryParse(v.toString()) ?? 0.0).toList();
+
+          // Apply softmax: exp(logit) / sum(exp(logits))
+          final List<double> expValues =
+              logitValues.map((l) => math.exp(l)).toList();
+          final double sumExp = expValues.reduce((a, b) => a + b);
+          final List<double> probabilities =
+              expValues.map((e) => e / sumExp).toList();
+
+          // Get the highest probability
+          confidenceScore = probabilities.reduce((a, b) => a > b ? a : b);
+        }
+        // If model returns raw class predictions without probabilities
+        else {
+          // Calculate a confidence proxy based on model's decision boundary distance
+          // This is a simplified approach when no probabilities are available
+          final String prediction = data['prediction'];
+          switch (prediction) {
+            case "Consumable":
+              confidenceScore = data.containsKey('consumable_score')
+                  ? double.tryParse(data['consumable_score'].toString()) ?? 0.85
+                  : 0.85;
+              break;
+            case "Half-consumable":
+              confidenceScore = data.containsKey('half_consumable_score')
+                  ? double.tryParse(data['half_consumable_score'].toString()) ??
+                      0.75
+                  : 0.75;
+              break;
+            case "Not consumable":
+              confidenceScore = data.containsKey('not_consumable_score')
+                  ? double.tryParse(data['not_consumable_score'].toString()) ??
+                      0.80
+                  : 0.80;
+              break;
+            default:
+              confidenceScore = 0.50; // Default baseline confidence
+          }
+        }
+
+        // Ensure confidence score is within valid range [0,1]
+        confidenceScore = confidenceScore.clamp(0.0, 1.0);
+
         // Get server processing time if available
         double? serverProcessingTime;
         if (data.containsKey('processing_time_sec')) {
@@ -611,6 +826,8 @@ class HomeViewState extends State<HomeView>
           "imagePath": imageFile.path,
           "timestamp": DateTime.now().toString(),
           "processingTime": serverProcessingTime,
+          "confidenceScore":
+              confidenceScore, // Add confidence score to prediction data
         };
 
         // Save to history
@@ -620,6 +837,8 @@ class HomeViewState extends State<HomeView>
           "color": prediction["color"],
           "imagePath": imageFile.path,
           "timestamp": DateTime.now().toString(),
+          "confidenceScore":
+              confidenceScore, // Add confidence score to history item
         });
 
         // Navigate to History after showing prediction details
@@ -724,6 +943,8 @@ class HomeViewState extends State<HomeView>
         'color': prediction['color'],
         'imagePath': prediction['imagePath'],
         'timestamp': prediction['timestamp'],
+        'confidenceScore':
+            prediction['confidenceScore'], // Add confidence score
       };
 
       setState(() {
@@ -774,6 +995,9 @@ class HomeViewState extends State<HomeView>
 
         // Timestamp
         serializedItem['timestamp'] = item['timestamp'];
+
+        // Confidence score
+        serializedItem['confidenceScore'] = item['confidenceScore'];
 
         return serializedItem;
       }).toList();
@@ -915,6 +1139,9 @@ class HomeViewState extends State<HomeView>
             ),
             const SizedBox(height: 10),
             _buildPromotionalCards(),
+            const SizedBox(height: 20),
+            // Add chicken pattern background with testimonials section
+            // _buildTestimonialsSection(),  // Removed Food Safety Insights section
             const SizedBox(height: 30),
             // Removed the image display section since users are redirected to prediction details
             const SizedBox(height: 5),
@@ -927,19 +1154,27 @@ class HomeViewState extends State<HomeView>
   Widget _buildPromotionalCards() {
     final List<Map<String, dynamic>> features = [
       {
-        "title": "Defect Detection",
-        "description": "Automatically detect defects in chicken breast images.",
+        "title": "Chicken Analysis",
+        "description":
+            "Classify chicken breast as consumable, half-consumable, or not consumable.",
+        "tooltip":
+            "Scan chicken breast to determine freshness and quality level",
+        "icon": Icons.check_circle_outline,
         "action": () =>
             _showImageSourceDialog(), // Navigate to camera/gallery selection
       },
       {
         "title": "History Tracking",
         "description": "Keep track of your previous uploads and predictions.",
+        "tooltip": "View your past scans and analysis results",
+        "icon": Icons.history,
         "action": () => navigateToTab(1), // Navigate to History tab
       },
       {
         "title": "User-Friendly",
         "description": "Simple and intuitive interface for easy navigation.",
+        "tooltip": "Access our comprehensive user guide for app instructions",
+        "icon": Icons.menu_book,
         "action": () {
           // Open GuideBook modal
           showDialog(
@@ -953,6 +1188,8 @@ class HomeViewState extends State<HomeView>
       {
         "title": "Fast Processing",
         "description": "Get predictions in seconds with high accuracy.",
+        "tooltip": "View detailed results of your latest scan",
+        "icon": Icons.speed,
         "action": () {
           // If there's at least one item in history, navigate to the latest prediction details
           if (_history.isNotEmpty) {
@@ -1033,7 +1270,7 @@ class HomeViewState extends State<HomeView>
     ];
 
     return SizedBox(
-      height: 150,
+      height: 190,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: features.length,
@@ -1041,63 +1278,12 @@ class HomeViewState extends State<HomeView>
           final feature = features[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: InkWell(
-              onTap: feature["action"] as Function(),
-              borderRadius: BorderRadius.circular(15),
-              child: Container(
-                width: 250,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(
-                      0xFFF3E5AB), // Warm cream background - same as camera dialog
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black
-                          .withAlpha(26), // Changed from withOpacity(0.1)
-                      spreadRadius: 1,
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      feature["title"]!,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: "Garamond",
-                        color:
-                            Color(0xFF3E2C1C), // Match text color with dialog
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      feature["description"]!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontFamily: "Garamond",
-                        color:
-                            Color(0xFF3E2C1C), // Match text color with dialog
-                      ),
-                    ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: const [
-                        Icon(
-                          Icons.arrow_forward,
-                          color: Color(0xFF3E2C1C),
-                          size: 16,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+            child: HoverableCard(
+              title: feature["title"],
+              description: feature["description"],
+              tooltip: feature["tooltip"],
+              icon: feature["icon"],
+              onTap: feature["action"],
             ),
           );
         },

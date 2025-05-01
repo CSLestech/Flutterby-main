@@ -162,13 +162,12 @@ class AboutPage extends StatelessWidget {
                     _buildFeatureItem("Upload existing photos from gallery"),
                     _buildFeatureItem("Get instant classification results"),
                     _buildFeatureItem("View history of previous analyses"),
-                    _buildFeatureItem(
-                        "User-friendly interface with detailed help"),
+
                     const SizedBox(height: 20), // Add vertical spacing
 
                     // Developers section header
                     const Text(
-                      "Developed by:",
+                      "Developed by: Tipian Students ",
                       style: TextStyle(
                         fontSize: 18, // Medium-large text size
                         fontWeight: FontWeight.bold, // Bold text
@@ -179,7 +178,7 @@ class AboutPage extends StatelessWidget {
 
                     // Developer information
                     const Text(
-                      "Tipian Students", // Development team name
+                      "", // Development team name
                       style: TextStyle(
                         fontSize: 16, // Medium text size
                         fontWeight: FontWeight.bold, // Bold text
@@ -199,12 +198,12 @@ class AboutPage extends StatelessWidget {
                         imagePath: "images/devs/Oropesa.png"),
                     _buildDeveloperProfile(
                         name: "Melissa Dollano",
-                        role: "ML Engineer",
+                        role: "UI/UX Designer",
                         imagePath: "images/dollano.jpg"),
-                    const SizedBox(height: 5), // Add small vertical spacing
+                    const SizedBox(height: 3), // Add small vertical spacing
 
                     const Text(
-                      "For educational purposes only.", // Disclaimer text
+                      "", // Disclaimer text
                       style: TextStyle(
                         fontSize: 14, // Smaller text size
                         fontStyle: FontStyle.italic, // Italic style

@@ -90,90 +90,7 @@ class PredictionDetailsScreen extends StatelessWidget {
                     ),
 
                     // Prediction result container - styled based on classification type
-                    Container(
-                      width: MediaQuery.of(context).size.width *
-                          0.85, // 85% of screen width
-                      decoration: BoxDecoration(
-                        // Background color varies with prediction type (green/yellow/red tints)
-                        color:
-                            _getPredictionBackgroundColor(prediction['text']),
-                        borderRadius:
-                            BorderRadius.circular(15), // Rounded corners
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(40), // Light shadow
-                            blurRadius: 8, // Blur amount
-                            spreadRadius: 1, // Shadow spread
-                            offset:
-                                const Offset(0, 4), // Shadow position (down)
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 24), // Inner padding
-                        child: Column(
-                          children: [
-                            // Result row with icon and prediction text
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment
-                                  .center, // Center horizontally
-                              children: [
-                                // Status icon (checkmark/warning/error)
-                                Icon(
-                                  prediction['icon'] as IconData? ??
-                                      Icons
-                                          .help_outline, // Fallback icon if missing
-                                  color: prediction['color'] as Color? ??
-                                      Colors.grey, // Fallback color if missing
-                                  size: 30, // Large icon size for visibility
-                                ),
-                                const SizedBox(
-                                    width: 12), // Space between icon and text
-                                // Prediction text (Consumable/Half-consumable/Not consumable)
-                                Text(
-                                  prediction['text'] as String? ??
-                                      'Unknown', // Fallback if missing
-                                  style: TextStyle(
-                                    fontSize: 24, // Large text for emphasis
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Garamond', // Brand font
-                                    color: _getPredictionTextColor(prediction[
-                                        'text']), // Color based on result
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10), // Vertical spacing
-                            // Divider line to separate result from timestamp
-                            Divider(
-                              color: _getPredictionBorderColor(
-                                      prediction['text'])
-                                  .withAlpha(
-                                      77), // 30% opacity matching border color
-                              thickness: 1, // Thin line
-                            ),
-                            const SizedBox(
-                                height: 6), // Small spacing after divider
-                            // Timestamp when analysis was performed
-                            Text(
-                              "Uploaded on: $timestamp", // Display the timestamp
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontStyle:
-                                    FontStyle.italic, // Italics for timestamp
-                                fontFamily: "Garamond",
-                                color: _getPredictionTextColor(
-                                        prediction['text'])
-                                    .withAlpha(
-                                        204), // 80% opacity of result text color
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    _buildPredictionCard(prediction),
                   ],
                 ),
               ),
@@ -341,45 +258,193 @@ class PredictionDetailsScreen extends StatelessWidget {
     return completer.future; // Return future for dimensions
   }
 
-  /// Returns appropriate background color based on prediction type
-  Color _getPredictionBackgroundColor(String? prediction) {
-    switch (prediction) {
-      case 'Consumable':
-        return const Color(0xFFE8F5E9); // Light green background
-      case 'Half-consumable':
-        return const Color(0xFFFFF8E1); // Light amber background
-      case 'Not consumable':
-        return const Color(0xFFFFEBEE); // Light red background
-      default:
-        return const Color(0xFFEFEFEF); // Light grey for unknown classification
-    }
-  }
+  /// Builds the prediction card with confidence score display
+  Widget _buildPredictionCard(Map<String, dynamic> prediction) {
+    // Get the confidence score from the prediction data (default to 0.0 if not present)
+    final double confidenceScore = prediction.containsKey('confidenceScore')
+        ? prediction['confidenceScore']
+        : 0.0;
 
-  /// Returns appropriate border color based on prediction type
-  Color _getPredictionBorderColor(String? prediction) {
-    switch (prediction) {
-      case 'Consumable':
-        return Colors.green.shade700; // Dark green border
-      case 'Half-consumable':
-        return Colors.orange.shade700; // Dark orange border
-      case 'Not consumable':
-        return Colors.red.shade700; // Dark red border
-      default:
-        return Colors.grey.shade700; // Dark grey for unknown classification
-    }
-  }
+    // Format the confidence score as a percentage
+    final String confidencePercentage =
+        '${(confidenceScore * 100).toStringAsFixed(1)}%';
 
-  /// Returns appropriate text color based on prediction type
-  Color _getPredictionTextColor(String? prediction) {
-    switch (prediction) {
-      case 'Consumable':
-        return Colors.green.shade800; // Dark green text
-      case 'Half-consumable':
-        return Colors.orange.shade900; // Dark orange text
-      case 'Not consumable':
-        return Colors.red.shade900; // Dark red text
-      default:
-        return Colors.grey.shade800; // Dark grey for unknown classification
+    // Determine confidence level color
+    Color confidenceColor;
+    if (confidenceScore >= 0.85) {
+      confidenceColor = Colors.green;
+    } else if (confidenceScore >= 0.70) {
+      confidenceColor = Colors.orange;
+    } else {
+      confidenceColor = Colors.red;
     }
+
+    // Add confidence level description text
+    String confidenceLevelText;
+    if (confidenceScore >= 0.90) {
+      confidenceLevelText = "High Confidence";
+    } else if (confidenceScore >= 0.70) {
+      confidenceLevelText = "Medium Confidence";
+    } else {
+      confidenceLevelText = "Low Confidence";
+    }
+
+    // Add recommendation based on prediction result
+    String recommendationText;
+    switch (prediction['text'].toString()) {
+      case "Consumable":
+        recommendationText = "Safe to cook.";
+        break;
+      case "Half-consumable":
+        recommendationText = "Use caution. Check smell and texture.";
+        break;
+      case "Not consumable":
+        recommendationText = "Not safe to eat.";
+        break;
+      default:
+        recommendationText = "Unable to provide recommendation.";
+    }
+
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      color: const Color(0xFFF3E5AB), // Warm cream background
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  prediction['icon'],
+                  size: 40,
+                  color: prediction['color'],
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Prediction Result",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[700],
+                          fontFamily: "Garamond",
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        prediction['text'].toString(),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: prediction['color'],
+                          fontFamily: "Garamond",
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Add confidence score display
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF3E2C1C).withAlpha(26),
+                borderRadius: BorderRadius.circular(8),
+                border:
+                    Border.all(color: const Color(0xFF3E2C1C).withAlpha(40)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.analytics_outlined,
+                    size: 20,
+                    color: Color(0xFF3E2C1C),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Confidence: ",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[800],
+                      fontFamily: "Garamond",
+                    ),
+                  ),
+                  Text(
+                    confidencePercentage,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: confidenceColor,
+                      fontFamily: "Garamond",
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "($confidenceLevelText)",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color: confidenceColor,
+                      fontFamily: "Garamond",
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Add recommendation message
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              decoration: BoxDecoration(
+                color: prediction['color'].withAlpha(20),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: prediction['color'].withAlpha(60),
+                  width: 1.0,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lightbulb_outline,
+                    size: 20,
+                    color: prediction['color'],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Recommendation: $recommendationText",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[800],
+                        fontFamily: "Garamond",
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
   }
 }
