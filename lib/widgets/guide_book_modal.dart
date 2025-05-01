@@ -39,10 +39,10 @@ class _GuideBookModalState extends State<GuideBookModal> {
     // Load content data from GuideBookContent class
     _contentPages = GuideBookContent.getContentPages();
 
-    // Calculate total pages by counting lessons and visual parameters
+    // Calculate total pages by counting tips and visual parameters
     _totalPages = _contentPages.isNotEmpty
         ? _contentPages[0]['visualParameters'].length +
-            _contentPages[0]['lessons'].length
+            (_contentPages[0]['tips']?.length ?? 0)
         : 0;
 
     // Initialize text-to-speech engine
@@ -259,19 +259,20 @@ class _GuideBookModalState extends State<GuideBookModal> {
     if (_contentPages.isEmpty) return ''; // No content to read
 
     final currentContent = _contentPages[0];
-    final lessonLength = currentContent['lessons'].length;
+    final lessonLength = currentContent['tips']?.length ?? 0;
 
     String textToRead = '';
 
     if (_currentPage < lessonLength) {
-      // We're on a lesson page - format the lesson content for speech
-      final lesson = currentContent['lessons'][_currentPage];
+      // We're on a tip page - format the tip content for speech
+      final lesson = currentContent['tips'][_currentPage];
       textToRead =
-          'Lesson ${lesson['number']}. ${lesson['title']}. ${lesson['content']} ';
+          'Tip ${lesson['number']}. ${lesson['title']}. ${lesson['content']} ';
 
-      // Add options if available
-      if (lesson['options'] != null && lesson['options'] is List) {
-        for (var option in lesson['options']) {
+      // Add additional information if available
+      if (lesson['additionalInformation'] != null &&
+          lesson['additionalInformation'] is List) {
+        for (var option in lesson['additionalInformation']) {
           textToRead += '${option['text']}. ';
           if (option['description'] != null) {
             textToRead += '${option['description']}. ';
@@ -335,6 +336,10 @@ class _GuideBookModalState extends State<GuideBookModal> {
         ? 120.0
         : (isSmallScreen ? 150.0 : 180.0); // Adjust image size for screen
 
+    // Define cream color for the guidebook background
+    const Color creamBackground = Color.fromARGB(255, 255, 252,
+        220); // Lighter cream/beige color for better app integration
+
     // Build the dialog
     return Dialog(
       backgroundColor: Colors.transparent, // Transparent background
@@ -349,8 +354,14 @@ class _GuideBookModalState extends State<GuideBookModal> {
         height: screenHeight * 0.85, // Use 85% of screen height
         padding: EdgeInsets.all(dialogPadding),
         decoration: BoxDecoration(
-          color: Colors.white, // White background for content
+          color: creamBackground, // Lighter cream color
           borderRadius: BorderRadius.circular(15), // Rounded corners
+          // Add a subtle border for better definition against light backgrounds
+          border: Border.all(
+            color: const Color(0xFF8B4513)
+                .withAlpha(60), // Reduced opacity for lighter border
+            width: 1.5,
+          ),
         ),
         child: Column(
           children: [
@@ -384,8 +395,9 @@ class _GuideBookModalState extends State<GuideBookModal> {
                             : Icons
                                 .volume_up_outlined, // Shows outline when silent
                         color: _isSpeaking
-                            ? Colors.blue
-                            : Colors.grey, // Blue when active
+                            ? const Color(0xFF8B4513)
+                            : const Color(0xFF8B4513).withAlpha(
+                                153), // 60% opacity (0.6 * 255 ≈ 153)
                         size:
                             isSmallScreen ? 18 : 22, // Smaller on small screens
                       ),
@@ -415,6 +427,8 @@ class _GuideBookModalState extends State<GuideBookModal> {
                         Icons.close,
                         size:
                             isSmallScreen ? 18 : 22, // Smaller on small screens
+                        color: const Color(
+                            0xFF8B4513), // Brown color for the close icon
                       ),
                       onPressed: () {
                         _stopSpeaking(); // Stop speaking when closing
@@ -474,11 +488,11 @@ class _GuideBookModalState extends State<GuideBookModal> {
                   }
 
                   final currentContent = _contentPages[0];
-                  final lessonLength = currentContent['lessons'].length;
+                  final lessonLength = currentContent['tips']?.length ?? 0;
 
                   if (index < lessonLength) {
-                    // Lessons pages - show lesson content, options, and images
-                    final lesson = currentContent['lessons'][index];
+                    // Tips pages - show tip content, options, and images
+                    final lesson = currentContent['tips'][index];
                     return _buildLessonPage(
                         lesson,
                         contentSize,
@@ -609,7 +623,7 @@ class _GuideBookModalState extends State<GuideBookModal> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Lesson ${lesson['number']}: ${lesson['title']}', // Formatted lesson title
+            'Tip ${lesson['number']}: ${lesson['title']}', // Changed "Lesson" to "Tip"
             style: TextStyle(
               fontSize: contentSize + 4, // Slightly larger than content text
               fontWeight: FontWeight.bold,
@@ -739,8 +753,11 @@ class _GuideBookModalState extends State<GuideBookModal> {
           ],
 
           // Display lesson options (cards with information)
-          if (lesson['options'] != null && lesson['options'] is List)
-            ...lesson['options'].map<Widget>((option) {
+          if (lesson['additionalInformation'] != null &&
+              lesson['additionalInformation']
+                  is List) // Changed from 'options' to 'additionalInformation'
+            ...lesson['additionalInformation'].map<Widget>((option) {
+              // Changed from 'options' to 'additionalInformation'
               return Padding(
                 padding: EdgeInsets.only(bottom: contentPadding),
                 child: Card(

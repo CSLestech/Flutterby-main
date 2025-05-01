@@ -237,9 +237,10 @@ class HelpPage extends StatelessWidget {
                     ),
                     const HelpStep(
                       'images/help/step5.png',
-                      "5. For more information about the application, click on the info icon.",
+                      "5. For more information about the application, click on the about icon.",
                       icon: Icons.info_outline,
-                      tooltip: "Find additional details in the info section.",
+                      tooltip:
+                          "Find additional details in the guidebook section.",
                     ),
 
                     const SizedBox(height: 16),
@@ -277,7 +278,7 @@ class HelpPage extends StatelessWidget {
                               SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  "For additional assistance, please check the guidebook or contact support.",
+                                  "For additional assistance, please check the guidebook",
                                   style: TextStyle(
                                     fontStyle: FontStyle.italic,
                                     color: Color(0xFF3E2C1C),
