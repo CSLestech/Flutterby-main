@@ -505,10 +505,8 @@ class _GuideBookModalState extends State<GuideBookModal> {
                     final paramIndex = index - lessonLength;
                     if (paramIndex <
                         currentContent['visualParameters'].length) {
-                      return _buildVisualParameterPage(
-                          currentContent['visualParameters'][paramIndex],
-                          contentSize,
-                          imageHeight);
+                      return _buildVisualizationCard(
+                          currentContent['visualParameters'][paramIndex]);
                     }
                   }
                   return const Center(
@@ -852,52 +850,216 @@ class _GuideBookModalState extends State<GuideBookModal> {
     );
   }
 
-  /// Build a visual parameter page with title, description, and image
-  Widget _buildVisualParameterPage(
-    Map<String, dynamic> parameter,
-    double contentSize,
-    double imageHeight,
-  ) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            parameter['title'], // Parameter title
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF3E2C1C), // Brown color for headings
+  /// Builds a visualization card for experimental parameters with better image handling
+  Widget _buildVisualizationCard(Map<String, dynamic> parameter) {
+    // Handle multiple images if the 'images' list is present
+    if (parameter.containsKey('images') && parameter['images'] is List) {
+      return Card(
+        elevation: 3,
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+              color: const Color(0xFF8B4513).withAlpha(60), width: 1),
+        ),
+        color: const Color(
+            0xFFFFFCDC), // Match the cream background color of the guide book
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  parameter['title'],
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Garamond',
+                    color: Color(0xFF3E2C1C),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  parameter['description'],
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Garamond',
+                    color: Color(0xFF3E2C1C),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Show multiple images in a column for better visibility
+                ...List.generate(
+                  (parameter['images'] as List).length,
+                  (index) => Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: const Color(0xFF8B4513).withAlpha(60),
+                              width: 1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          width: double.infinity,
+                          constraints: const BoxConstraints(
+                            minHeight: 180, // Ensure minimum height
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.asset(
+                              parameter['images'][index],
+                              fit: BoxFit
+                                  .contain, // Changed to contain to prevent cropping
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                height: 180,
+                                color: Colors.grey[200],
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.image_not_supported,
+                                        size: 48,
+                                        color: Colors.grey[500],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        "Image not available",
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontFamily: 'Garamond',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Show label with improved styling if available
+                        if (parameter.containsKey('imageLabels') &&
+                            parameter['imageLabels'] is List &&
+                            index < (parameter['imageLabels'] as List).length)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 6, horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF3E2C1C).withAlpha(200),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              parameter['imageLabels'][index],
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontFamily: 'Garamond',
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFF3E5AB),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
-          Text(
-            parameter['description'], // Detailed parameter description
-            style: TextStyle(fontSize: contentSize),
-          ),
-          if (parameter['image'] != null) ...[
-            const SizedBox(height: 20),
-            Center(
-              child: Image.asset(
-                parameter['image'], // Load parameter image from assets
-                height: imageHeight, // Use responsive height
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return SizedBox(
-                    height: imageHeight,
-                    child: const Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        size: 50,
-                        color: Colors.grey,
+        ),
+      );
+    }
+
+    // Single image visualization card with improved styling
+    return Card(
+      elevation: 3,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side:
+            BorderSide(color: const Color(0xFF8B4513).withAlpha(60), width: 1),
+      ),
+      color: const Color(0xFFFFFCDC), // Match the cream background color
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                parameter['title'],
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Garamond',
+                  color: Color(0xFF3E2C1C),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                parameter['description'],
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Garamond',
+                  color: Color(0xFF3E2C1C),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: const Color(0xFF8B4513).withAlpha(60),
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                width: double.infinity,
+                constraints: const BoxConstraints(
+                  minHeight: 180, // Ensure minimum height
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    parameter['image'],
+                    fit: BoxFit
+                        .contain, // Changed to contain to prevent cropping
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 180,
+                      color: Colors.grey[200],
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.image_not_supported,
+                              size: 48,
+                              color: Colors.grey[500],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Image not available",
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontFamily: 'Garamond',
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
-            ),
-          ],
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

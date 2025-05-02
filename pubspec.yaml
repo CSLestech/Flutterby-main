@@ -90,6 +90,9 @@ flutter:
     - images/ui/consumable204.jpg
     - images/ui/halfconsumable195.jpg
     - images/ui/notconsumable408.jpg
+    - images/ui/color.png
+    - images/ui/breed.png
+  
     
 
 

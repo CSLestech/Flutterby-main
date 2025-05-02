@@ -295,7 +295,16 @@ class GuideBookContent {
             'title': 'Experimental Design', // Focus on study methodology
             'description':
                 'The 3-day experiment used Broiler Hybrid (Magnolia) chicken breast stored in standard refrigeration. Images were captured under controlled lighting conditions at 24-hour intervals. The model analyzes visual characteristics that correlate with microbiological testing results to determine which classification category the chicken belongs in.',
-            'image': 'images/ui/experiment.png', // Fixed: Added file extension
+            'images': [
+              'images/ui/c5.png',
+              'images/ui/c6.png',
+              'images/ui/c7.png'
+            ], // Multiple images for the experiment timeline
+            'imageLabels': [
+              'Day 1: Fresh Sample',
+              'Day 2: Beginning Deterioration',
+              'Day 3: Significant Changes'
+            ], // Labels for the experiment images
           },
         ],
       },
