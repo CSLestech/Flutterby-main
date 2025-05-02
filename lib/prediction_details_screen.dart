@@ -377,20 +377,25 @@ class PredictionDetailsScreen extends StatelessWidget {
       confidenceLevelText = "Low Confidence";
     }
 
-    // Add recommendation based on prediction result
-    String recommendationText;
-    switch (prediction['text'].toString()) {
-      case "Consumable":
-        recommendationText = "Safe to cook.";
-        break;
-      case "Half-consumable":
-        recommendationText = "Use caution. Check smell and texture.";
-        break;
-      case "Not consumable":
-        recommendationText = "Not safe to eat.";
-        break;
-      default:
-        recommendationText = "Unable to provide recommendation.";
+    // Extract processing time if available
+    String processingTimeText = "Not available";
+    double? processingTime;
+
+    if (prediction.containsKey('processingTime') &&
+        prediction['processingTime'] != null) {
+      final dynamic rawTime = prediction['processingTime'];
+
+      if (rawTime is double) {
+        processingTime = rawTime;
+      } else if (rawTime is num) {
+        processingTime = rawTime.toDouble();
+      } else if (rawTime is String) {
+        processingTime = double.tryParse(rawTime);
+      }
+
+      if (processingTime != null) {
+        processingTimeText = "${processingTime.toStringAsFixed(2)} seconds";
+      }
     }
 
     return Card(
@@ -498,41 +503,48 @@ class PredictionDetailsScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Add recommendation message
+            // Add processing time display
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               decoration: BoxDecoration(
-                color: prediction['color'].withAlpha(20),
+                color: const Color(0xFF3E2C1C).withAlpha(15),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: prediction['color'].withAlpha(60),
-                  width: 1.0,
-                ),
+                border:
+                    Border.all(color: const Color(0xFF3E2C1C).withAlpha(30)),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.lightbulb_outline,
+                  const Icon(
+                    Icons.timer_outlined,
                     size: 20,
-                    color: prediction['color'],
+                    color: Color(0xFF3E2C1C),
                   ),
                   const SizedBox(width: 8),
+                  Text(
+                    "Processing Time: ",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[800],
+                      fontFamily: "Garamond",
+                    ),
+                  ),
                   Expanded(
                     child: Text(
-                      "Recommendation: $recommendationText",
+                      processingTimeText,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Colors.grey[800],
                         fontFamily: "Garamond",
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 20),
           ],
         ),
       ),

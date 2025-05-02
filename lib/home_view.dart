@@ -409,8 +409,28 @@ class HomeViewState extends State<HomeView>
               historyItem['confidenceScore'] = 0.75;
             }
 
+            // CRITICAL FIX: Load processing time from history
+            try {
+              // Extract processing time if available
+              final dynamic rawTime = item['processingTime'];
+
+              if (rawTime != null) {
+                if (rawTime is double) {
+                  historyItem['processingTime'] = rawTime;
+                } else if (rawTime is num) {
+                  historyItem['processingTime'] = rawTime.toDouble();
+                } else if (rawTime is String) {
+                  historyItem['processingTime'] = double.tryParse(rawTime);
+                }
+              }
+            } catch (e) {
+              dev.log("Error parsing processing time: $e",
+                  name: 'HistoryLoader');
+              // Leave processingTime as null if parsing fails
+            }
+
             dev.log(
-                "Loaded history item: ${item['text']} with confidence: ${historyItem['confidenceScore']}",
+                "Loaded history item: ${item['text']} with confidence: ${historyItem['confidenceScore']}, processing time: ${historyItem['processingTime']}",
                 name: 'HistoryLoader');
 
             return historyItem;
@@ -710,7 +730,7 @@ class HomeViewState extends State<HomeView>
     dev.log("🔍 Starting image classification performance test",
         name: 'PerformanceTest');
 
-    final uri = Uri.parse("http://192.168.0.108:5000/predict");
+    final uri = Uri.parse("http://192.168.1.11:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
@@ -809,6 +829,14 @@ class HomeViewState extends State<HomeView>
         // Log final confidence for debugging
         dev.log("FINAL CONFIDENCE: $confidenceScore", name: 'ConfidenceDebug');
 
+        // Extract processing time from server response
+        double? processingTime;
+        if (data.containsKey('processing_time_sec')) {
+          processingTime = _extractDoubleValue(data['processing_time_sec']);
+          dev.log("Processing time from server: $processingTime",
+              name: 'ServerDebug');
+        }
+
         // Create prediction with guaranteed double confidence score
         final Map<String, dynamic> prediction = {
           "text": data['prediction'],
@@ -816,10 +844,9 @@ class HomeViewState extends State<HomeView>
           "color": _getPredictionColor(data['prediction']),
           "imagePath": imageFile.path,
           "timestamp": DateTime.now().toString(),
-          "processingTime": data.containsKey('processing_time_sec')
-              ? _extractDoubleValue(data['processing_time_sec'])
-              : null,
           "confidenceScore": confidenceScore,
+          // Make sure to include processing time
+          "processingTime": processingTime,
         };
 
         ConfidenceTracker.logScore(
@@ -840,11 +867,16 @@ class HomeViewState extends State<HomeView>
           "timestamp": DateTime.now().toString(),
           // PERMANENT FIX: Always ensure confidence score is a proper double
           "confidenceScore": double.parse(confidenceScore.toString()),
+          // Also save processing time to history
+          "processingTime": processingTime,
         });
 
         // Debug verification
         dev.log("CONFIDENCE BEFORE HISTORY: $confidenceScore", name: 'FIX');
         dev.log("CONFIDENCE IN HISTORY ITEM: ${historyItem['confidenceScore']}",
+            name: 'FIX');
+        dev.log(
+            "PROCESSING TIME IN HISTORY ITEM: ${historyItem['processingTime']}",
             name: 'FIX');
 
         ConfidenceTracker.logScore(
@@ -996,6 +1028,18 @@ class HomeViewState extends State<HomeView>
         historyCopy['confidenceScore'] = 0.85; // Default if missing
       }
 
+      // Also preserve processing time in the history copy
+      if (prediction.containsKey('processingTime')) {
+        final dynamic rawTime = prediction['processingTime'];
+        if (rawTime is double) {
+          historyCopy['processingTime'] = rawTime;
+        } else if (rawTime is num) {
+          historyCopy['processingTime'] = rawTime.toDouble();
+        } else if (rawTime is String) {
+          historyCopy['processingTime'] = double.tryParse(rawTime);
+        }
+      }
+
       // Ensure confidence score is within valid range
       historyCopy['confidenceScore'] =
           (historyCopy['confidenceScore'] as double).clamp(0.0, 1.0);
@@ -1035,6 +1079,19 @@ class HomeViewState extends State<HomeView>
         // Clamp the confidence score to valid range
         confidenceScore = confidenceScore.clamp(0.0, 1.0);
 
+        // Handle processing time if available
+        double? processingTime;
+        if (item.containsKey('processingTime') &&
+            item['processingTime'] != null) {
+          if (item['processingTime'] is double) {
+            processingTime = item['processingTime'];
+          } else if (item['processingTime'] is num) {
+            processingTime = (item['processingTime'] as num).toDouble();
+          } else if (item['processingTime'] is String) {
+            processingTime = double.tryParse(item['processingTime']);
+          }
+        }
+
         return {
           'text': item['text'],
           'iconCode': (item['icon'] as IconData).codePoint,
@@ -1044,13 +1101,15 @@ class HomeViewState extends State<HomeView>
           'imagePath': item['imagePath'],
           'timestamp': item['timestamp'],
           'confidenceScore': confidenceScore, // Store as double
+          // Include processing time in serialized data
+          'processingTime': processingTime,
         };
       }).toList();
 
       // Debug log the confidence scores being saved
       for (var item in serializedHistory) {
         dev.log(
-            "Saving history item with confidence: ${item['confidenceScore']}",
+            "Saving history item with confidence: ${item['confidenceScore']}, processing time: ${item['processingTime']}",
             name: 'HistorySerializer');
       }
 

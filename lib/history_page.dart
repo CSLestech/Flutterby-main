@@ -122,6 +122,9 @@ class HistoryPage extends StatelessWidget {
                                   'confidenceScore':
                                       item['confidenceScore'] ?? 0.75,
 
+                                  // CRITICAL FIX: Also pass processing time from history item
+                                  'processingTime': item['processingTime'],
+
                                   // Mark this as coming from history to help with fallbacks
                                   'fromHistory': true,
                                 },
@@ -214,7 +217,7 @@ class HistoryPage extends StatelessWidget {
                                       ),
                                     ),
 
-                                    // NEW: Add confidence score display in history list
+                                    // Add confidence score display in history list
                                     if (item.containsKey('confidenceScore') &&
                                         item['confidenceScore'] != null &&
                                         (item['confidenceScore'] as num)
@@ -232,6 +235,23 @@ class HistoryPage extends StatelessWidget {
                                             color: _getConfidenceColor(
                                                 (item['confidenceScore'] as num)
                                                     .toDouble()),
+                                          ),
+                                        ),
+                                      ),
+
+                                    // Display processing time if available
+                                    if (item.containsKey('processingTime') &&
+                                        item['processingTime'] != null)
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(top: 4.0),
+                                        child: Text(
+                                          "Processing: ${(item['processingTime'] as num).toStringAsFixed(2)}s",
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontFamily: "Garamond",
+                                            fontStyle: FontStyle.italic,
+                                            color: Colors.grey,
                                           ),
                                         ),
                                       ),

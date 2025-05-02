@@ -167,7 +167,7 @@ class AboutPage extends StatelessWidget {
 
                     // Developers section header
                     const Text(
-                      "Developed by: Tipian Students ",
+                      "Developed by: T.I.P.ian Students ",
                       style: TextStyle(
                         fontSize: 18, // Medium-large text size
                         fontWeight: FontWeight.bold, // Bold text
