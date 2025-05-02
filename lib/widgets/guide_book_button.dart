@@ -283,7 +283,7 @@ class GuideBookContent {
             'title': 'Visual Texture Evaluation', // Focus on texture assessment
             'description':
                 'The texture of fresh chicken breast can be evaluated visually by looking for firmness and a smooth surface. It should appear plump and intact, without signs of sliminess, stickiness, or excessive softness. Dull or uneven surfaces may indicate spoilage or poor quality',
-            'image': 'images/ui/texture.png', // Fixed: Added file extension
+            'image': 'images/ui/9.png', // Fixed: Added file extension
           },
           {
             'title': 'Breed Considerations', // Focus on breed differences
@@ -301,9 +301,9 @@ class GuideBookContent {
               'images/ui/c7.png'
             ], // Multiple images for the experiment timeline
             'imageLabels': [
-              'Day 1: Fresh Sample',
-              'Day 2: Beginning Deterioration',
-              'Day 3: Significant Changes'
+              'Day 1: Newly-purchased Consumable Chicken Breast Sample',
+              'Day 2: Chicken Breast Sample Beginning Deterioration',
+              'Day 3: Notable Chicken Breast Visual Deterioration'
             ], // Labels for the experiment images
           },
         ],
