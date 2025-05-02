@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart'; // Import Material Design package
 import 'widgets/guide_book_button.dart'; // Import custom GuideBookButton widget
+import 'widgets/guide_book_modal.dart';
 
 /// HelpStep widget represents a single help instruction with an image and text
 class HelpStep extends StatelessWidget {
@@ -90,8 +91,27 @@ class HelpStep extends StatelessWidget {
               child: Image.asset(
                 imagePath,
                 fit: BoxFit.cover,
-                height: 200, // Slightly increased image height
+                height:
+                    380, // Increased image height significantly for better visibility
                 width: double.infinity, // Image takes full width
+                errorBuilder: (context, error, stackTrace) {
+                  // Error fallback if image fails to load
+                  return Container(
+                    height: 380, // Match the increased height
+                    width: double.infinity,
+                    color: Colors.grey[200],
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.image_not_supported,
+                            size: 40, color: Colors.grey[400]),
+                        const SizedBox(height: 10),
+                        const Text('Image not available',
+                            style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -229,7 +249,7 @@ class HelpPage extends StatelessWidget {
                           "Check the screen for the classification result.",
                     ),
                     const HelpStep(
-                      'images/help/step4.png',
+                      'images/ui/8.png',
                       "4. You can view the history of previous predictions by clicking on the history icon.",
                       icon: Icons.history,
                       tooltip:
@@ -244,48 +264,60 @@ class HelpPage extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 16),
-                    MouseRegion(
-                      cursor: SystemMouseCursors.help,
-                      child: Tooltip(
-                        message:
-                            "Contact us at support@flutterby.com or visit our website for more resources",
-                        preferBelow: false,
-                        showDuration: const Duration(seconds: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF3E2C1C),
-                          borderRadius: BorderRadius.circular(8.0),
-                        ),
-                        textStyle: const TextStyle(
-                          color: Color(0xFFF3E5AB),
-                          fontSize: 14,
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(16.0),
+                    InkWell(
+                      onTap: () {
+                        // Show the guide book modal when clicked
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return const GuideBookModal();
+                          },
+                        );
+                      },
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: Tooltip(
+                          message:
+                              "Open the guidebook for detailed information",
+                          preferBelow: false,
+                          showDuration: const Duration(seconds: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF3E2C1C).withAlpha(26),
-                            borderRadius: BorderRadius.circular(12.0),
-                            border: Border.all(
-                              color: const Color(0xFF3E2C1C).withAlpha(77),
-                              width: 1.0,
-                            ),
+                            color: const Color(0xFF3E2C1C),
+                            borderRadius: BorderRadius.circular(8.0),
                           ),
-                          child: const Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: Color(0xFF3E2C1C),
+                          textStyle: const TextStyle(
+                            color: Color(0xFFF3E5AB),
+                            fontSize: 14,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.all(16.0),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF3E2C1C).withAlpha(26),
+                              borderRadius: BorderRadius.circular(12.0),
+                              border: Border.all(
+                                color: const Color(0xFF3E2C1C).withAlpha(77),
+                                width: 1.0,
                               ),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  "For additional assistance, please check the guidebook",
-                                  style: TextStyle(
-                                    fontStyle: FontStyle.italic,
-                                    color: Color(0xFF3E2C1C),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons
+                                      .menu_book_rounded, // Using same guidebook icon
+                                  color: Color(0xFF3E2C1C),
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    "For additional assistance, please check the guidebook",
+                                    style: TextStyle(
+                                      fontStyle: FontStyle.italic,
+                                      color: Color(0xFF3E2C1C),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),

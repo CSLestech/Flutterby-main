@@ -96,8 +96,10 @@ flutter:
     - images/ui/5.png
     - images/ui/6.png
     - images/ui/7.png
-    
-
+    - images/ui/c5.png
+    - images/ui/c6.png
+    - images/ui/c7.png
+    - images/ui/8.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
