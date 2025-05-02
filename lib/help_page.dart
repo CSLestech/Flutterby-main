@@ -210,19 +210,19 @@ class HelpPage extends StatelessWidget {
 
                     // List of help steps with images and instructions
                     const HelpStep(
-                      'images/help/step1.png',
+                      'images/ui/4.png',
                       "1. Click on the camera icon to take a picture or select an image from the gallery.",
                       icon: Icons.camera_alt_outlined,
                       tooltip: "Use the camera or gallery to provide an image.",
                     ),
                     const HelpStep(
-                      'images/help/step2.png',
+                      'images/ui/6.png',
                       "2. Wait for the application to classify the image.",
                       icon: Icons.hourglass_empty,
                       tooltip: "The app will process the image to classify it.",
                     ),
                     const HelpStep(
-                      'images/help/step3.png',
+                      'images/ui/7.png',
                       "3. View the prediction result displayed on the screen.",
                       icon: Icons.visibility_outlined,
                       tooltip:
@@ -236,7 +236,7 @@ class HelpPage extends StatelessWidget {
                           "Access past predictions in the history section.",
                     ),
                     const HelpStep(
-                      'images/help/step5.png',
+                      'images/ui/5.png',
                       "5. For more information about the application, click on the about icon.",
                       icon: Icons.info_outline,
                       tooltip:
