@@ -277,25 +277,25 @@ class GuideBookContent {
             'title': 'Color Assessment', // Focus on color assessment
             'description':
                 'The color of chicken breast is one of the most important indicators of freshness. Fresh chicken should have a light pink to deep pink color with white fat. Gray, green, or purple discoloration indicates spoilage. Yellow fat is normal in some chicken breeds.', // Detailed guidelines
-            'image': 'images/ui/guide', // Reference to guide image
+            'image': 'images/ui/color.png', // Reference to guide image
           },
           {
             'title': 'Visual Texture Evaluation', // Focus on texture assessment
             'description':
-                'Fresh chicken has a firm texture that springs back when touched. It should not feel slimy, sticky, or excessively soft. When pressed with a finger, the indentation should disappear quickly. Slimy texture indicates bacterial growth and spoilage.',
-            'image': 'images/ui/guide',
+                'The texture of fresh chicken breast can be evaluated visually by looking for firmness and a smooth surface. It should appear plump and intact, without signs of sliminess, stickiness, or excessive softness. Dull or uneven surfaces may indicate spoilage or poor quality',
+            'image': 'images/ui/texture.png', // Fixed: Added file extension
           },
           {
             'title': 'Breed Considerations', // Focus on breed differences
             'description':
                 'This application is calibrated for Broiler Hybrid (Magnolia) chicken breast. While the general principles apply to all chicken types, there may be slight variations in color and texture between breeds. Broiler chickens typically have lighter meat compared to free-range or heritage breeds.',
-            'image': 'images/ui/guide',
+            'image': 'images/ui/breed.png', // Fixed: Added file extension
           },
           {
             'title': 'Experimental Design', // Focus on study methodology
             'description':
                 'The 3-day experiment used Broiler Hybrid (Magnolia) chicken breast stored in standard refrigeration. Images were captured under controlled lighting conditions at 24-hour intervals. The model analyzes visual characteristics that correlate with microbiological testing results to determine which classification category the chicken belongs in.',
-            'image': 'images/ui/guide',
+            'image': 'images/ui/experiment.png', // Fixed: Added file extension
           },
         ],
       },

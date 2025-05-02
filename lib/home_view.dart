@@ -535,7 +535,7 @@ class HomeViewState extends State<HomeView>
 
       if (mounted) {
         // Show a user-friendly error message based on the error type
-        if (e.toString().contains("camera") || source == ImageSource.camera) {
+        if (e.toString().contains("Classify") || source == ImageSource.camera) {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
@@ -710,7 +710,7 @@ class HomeViewState extends State<HomeView>
     dev.log("🔍 Starting image classification performance test",
         name: 'PerformanceTest');
 
-    final uri = Uri.parse("http://192.168.1.11:5000/predict");
+    final uri = Uri.parse("http://192.168.31.180:5000/predict");
 
     final request = http.MultipartRequest('POST', uri)
       ..files.add(
@@ -1436,7 +1436,7 @@ class HomeViewState extends State<HomeView>
                 duration: const Duration(milliseconds: 300),
                 child: const Icon(Icons.camera_alt),
               ),
-              label: 'Camera',
+              label: 'Classify',
             ),
             BottomNavigationBarItem(
               icon: AnimatedScale(
@@ -1560,6 +1560,39 @@ class HomeViewState extends State<HomeView>
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
                 },
+              ),
+              const SizedBox(height: 15),
+              // Added disclaimer below the options
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withAlpha(51),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Disclaimer:",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF3E2C1C),
+                        fontFamily: "Garamond",
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      "This app provides an estimate based on visual appearance and should not be the sole factor in determining food safety. Always use proper food handling practices and when in doubt, throw it out.",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF3E2C1C),
+                        fontFamily: "Garamond",
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

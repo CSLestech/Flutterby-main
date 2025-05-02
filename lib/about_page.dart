@@ -212,17 +212,17 @@ class AboutPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 20), // Add vertical spacing
 
-                    // Disclaimer section
+                    // Disclaimer section (made more subtle)
                     Container(
-                      padding: const EdgeInsets.all(
-                          10), // Add padding inside container
+                      padding: const EdgeInsets.all(8), // Reduced padding
                       decoration: BoxDecoration(
-                        color: Colors.orange.withAlpha(
-                            51), // Light orange background (opacity 0.2 ≈ 51/255)
+                        color:
+                            Colors.orange.withAlpha(30), // Lighter background
                         borderRadius:
                             BorderRadius.circular(8), // Rounded corners
-                        border:
-                            Border.all(color: Colors.orange), // Orange border
+                        border: Border.all(
+                            color: Colors.orange
+                                .withAlpha(128)), // Fixed deprecated method
                       ),
                       child: const Column(
                         crossAxisAlignment:
@@ -231,7 +231,7 @@ class AboutPage extends StatelessWidget {
                           Text(
                             "Disclaimer:", // Disclaimer header
                             style: TextStyle(
-                              fontSize: 16, // Medium text size
+                              fontSize: 14, // Smaller text size
                               fontWeight: FontWeight.bold, // Bold text
                               color: Color(0xFF3E2C1C), // Dark brown text color
                             ),
@@ -240,7 +240,7 @@ class AboutPage extends StatelessWidget {
                           Text(
                             "This app provides an estimate based on visual appearance and should not be the sole factor in determining food safety. Always use proper food handling practices and when in doubt, throw it out.", // Disclaimer text
                             style: TextStyle(
-                              fontSize: 14, // Smaller text size
+                              fontSize: 12, // Smaller text size
                               color: Color(0xFF3E2C1C), // Dark brown text color
                             ),
                           ),
