@@ -57,43 +57,25 @@ class PredictionDetailsScreen extends StatelessWidget {
       ),
       // Use the background wrapper for consistent visual style
       body: bg.BackgroundWrapper(
-        child: Center(
+        child: SafeArea(
           child: Column(
-            mainAxisAlignment:
-                MainAxisAlignment.center, // Center content vertically
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0), // Side margins
-                child: Column(
-                  children: [
-                    // Image display section - only if image exists
-                    if (imagePath != null && File(imagePath!).existsSync())
-                      _buildImageDisplay(context),
+              // Image display section - only if image exists
+              if (imagePath != null && File(imagePath!).existsSync())
+                Expanded(
+                  flex: 3, // Takes up approximately 60% of available space
+                  child: _buildImprovedImageDisplay(context),
+                ),
 
-                    // Dynamic spacing based on image type (portrait vs landscape)
-                    FutureBuilder<Size>(
-                      future: imagePath != null && File(imagePath!).existsSync()
-                          ? _getImageDimension(File(
-                              imagePath!)) // Get dimensions if image exists
-                          : Future.value(
-                              const Size(1, 1)), // Default size otherwise
-                      builder: (context, snapshot) {
-                        // Calculate aspect ratio to adjust spacing
-                        final aspectRatio = snapshot.hasData
-                            ? snapshot.data!.width / snapshot.data!.height
-                            : 1.0; // Default to square if dimensions unknown
-
-                        // Apply smaller spacing for portrait images, larger for landscape
-                        final spacingHeight = aspectRatio < 1.0 ? 15.0 : 25.0;
-
-                        return SizedBox(height: spacingHeight); // Apply spacing
-                      },
-                    ),
-
-                    // Prediction result container - styled based on classification type
-                    _buildPredictionCard(prediction),
-                  ],
+              // Prediction result container - styled based on classification type
+              Expanded(
+                flex: 2, // Takes up approximately 40% of available space
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildPredictionCard(prediction),
+                  ),
                 ),
               ),
             ],
@@ -149,95 +131,110 @@ class PredictionDetailsScreen extends StatelessWidget {
     );
   }
 
-  /// Builds the image display section with appropriate sizing and error handling
-  Widget _buildImageDisplay(BuildContext context) {
-    // Calculate appropriate image height based on screen size
-    final screenSize = MediaQuery.of(context).size;
-    final imageMaxHeight =
-        screenSize.height * 0.4; // Limit to 40% of screen height
+  /// Improved image display with interactive zooming and better sizing
+  Widget _buildImprovedImageDisplay(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: InteractiveViewer(
+        minScale: 0.8,
+        maxScale: 3.0,
+        child: FutureBuilder<Size>(
+          future: _getImageDimension(File(imagePath!)),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF3E2C1C),
+                ),
+              );
+            }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch, // Stretch horizontally
-      children: [
-        Container(
-          constraints: BoxConstraints(
-            maxHeight: imageMaxHeight, // Apply maximum height constraint
-          ),
-          // Center the image in available space
-          child: Center(
-            child: FutureBuilder<Size>(
-              future: _getImageDimensions(File(
-                  imagePath!)), // Determine image dimensions asynchronously
-              builder: (context, snapshot) {
-                // Show loading indicator while getting image dimensions
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator(
-                    color: Color(0xFFF3E5AB), // Light cream color loader
+            // Dynamic calculation for best fit
+            if (snapshot.hasData) {
+              final imageSize = snapshot.data!;
+              final aspectRatio = imageSize.width / imageSize.height;
+              final isLandscape = aspectRatio > 1.0;
+
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  // Calculate the best fit size based on available space and aspect ratio
+                  double width, height;
+
+                  if (isLandscape) {
+                    // For landscape images, fit width first
+                    width = constraints.maxWidth;
+                    height = width / aspectRatio;
+
+                    // If height is too tall, adjust both
+                    if (height > constraints.maxHeight * 0.9) {
+                      height = constraints.maxHeight * 0.9;
+                      width = height * aspectRatio;
+                    }
+                  } else {
+                    // For portrait images, fit height first
+                    height = constraints.maxHeight * 0.9;
+                    width = height * aspectRatio;
+
+                    // If width is too wide, adjust both
+                    if (width > constraints.maxWidth) {
+                      width = constraints.maxWidth;
+                      height = width / aspectRatio;
+                    }
+                  }
+
+                  return Center(
+                    child: SizedBox(
+                      width: width,
+                      height: height,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                            8), // Slight rounding of the image corners
+                        child: Image.file(
+                          File(imagePath!),
+                          fit: BoxFit
+                              .contain, // Ensure the entire image is visible without cropping
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 48,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
                   );
-                }
+                },
+              );
+            }
 
-                // Show fallback display if dimensions couldn't be determined
-                if (snapshot.hasError || !snapshot.hasData) {
-                  return _buildImageWithFallback();
-                }
-
-                // Calculate aspect ratio from image dimensions
-                final imageSize = snapshot.data!;
-                final aspectRatio = imageSize.width / imageSize.height;
-
-                // Display image with scroll capability if needed
-                return SingleChildScrollView(
-                  physics:
-                      const ClampingScrollPhysics(), // Smooth physics for scrolling
-                  child: AspectRatio(
-                    aspectRatio: aspectRatio, // Apply correct aspect ratio
-                    child:
-                        _buildImageWithFallback(), // Display image with error handling
-                  ),
-                );
-              },
-            ),
-          ),
+            // Fallback if dimensions couldn't be determined
+            return Center(
+              child: Image.file(
+                File(imagePath!),
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.grey.shade200,
+                    child: const Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
         ),
-      ],
-    );
-  }
-
-  /// Helper method to get image dimensions before displaying
-  Future<Size> _getImageDimensions(File imageFile) async {
-    final Completer<Size> completer =
-        Completer(); // Create a completer for async resolution
-    final image = Image.file(imageFile); // Load image from file
-    // Listen for image to load and extract dimensions when available
-    image.image.resolve(const ImageConfiguration()).addListener(
-      ImageStreamListener((ImageInfo info, bool _) {
-        completer.complete(Size(
-          info.image.width.toDouble(), // Extract image width
-          info.image.height.toDouble(), // Extract image height
-        ));
-      }),
-    );
-    return completer.future; // Return future that will resolve with dimensions
-  }
-
-  /// Builds the image display with error handling for missing or corrupt images
-  Widget _buildImageWithFallback() {
-    return Image.file(
-      File(imagePath!), // Load image from file path
-      fit: BoxFit.contain, // Preserve aspect ratio, fit within bounds
-      errorBuilder: (context, error, stackTrace) {
-        // Show fallback UI if image loading fails
-        return Container(
-          color: Colors.grey.shade300, // Light grey background
-          child: const Center(
-            child: Icon(
-              Icons.broken_image, // Broken image icon
-              size: 64, // Large icon size
-              color: Colors.grey, // Grey color
-            ),
-          ),
-        );
-      },
+      ),
     );
   }
 
