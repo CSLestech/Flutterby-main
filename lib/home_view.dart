@@ -732,7 +732,7 @@ class HomeViewState extends State<HomeView>
 
     // List of possible server addresses to try in order
     final List<String> serverAddresses = [
-      "http://192.168.1.11:5000/predict", // Primary address
+      "http://192.168.31.180:5000/predict", // Primary address
       "http://172.30.48.1:5000/predict", // Alternative address 1
       "http://172.31.80.1:5000/predict", // Alternative address 2
       "http://10.0.2.2:5000/predict", // For Android emulator
