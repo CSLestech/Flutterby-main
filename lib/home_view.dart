@@ -730,212 +730,252 @@ class HomeViewState extends State<HomeView>
     dev.log("🔍 Starting image classification performance test",
         name: 'PerformanceTest');
 
-    final uri = Uri.parse("http://192.168.1.11:5000/predict");
+    // List of possible server addresses to try in order
+    final List<String> serverAddresses = [
+      "http://192.168.1.11:5000/predict", // Primary address
+      "http://172.30.48.1:5000/predict", // Alternative address 1
+      "http://172.31.80.1:5000/predict", // Alternative address 2
+      "http://10.0.2.2:5000/predict", // For Android emulator
+      "http://localhost:5000/predict" // For iOS simulator
+    ];
 
-    final request = http.MultipartRequest('POST', uri)
-      ..files.add(
-        await http.MultipartFile.fromPath(
-          'image',
-          imageFile.path,
-          contentType: MediaType('image', 'jpeg'),
-        ),
-      );
+    Exception? lastException;
 
-    try {
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
+    // Try each server address until one works
+    for (String serverAddress in serverAddresses) {
+      try {
+        dev.log("Trying to connect to server at: $serverAddress",
+            name: 'NetworkDebug');
+        final uri = Uri.parse(serverAddress);
 
-      // Stop timer and calculate elapsed time
-      timer.stop();
-
-      // Stop performance monitoring and get results
-      await _performanceMonitor.stopCpuMonitoring();
-      _performanceMonitor.stopFrameMonitoring();
-
-      // Close the loading dialog
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        // Log full raw response for debugging
-        dev.log("FULL SERVER RESPONSE: ${response.body}", name: 'ServerDebug');
-
-        // Track raw response for debugging confidence issues
-        ConfidenceTracker.logScore(
-            "1_RAW_SERVER_RESPONSE",
-            data.containsKey('confidenceScore')
-                ? data['confidenceScore']
-                : null,
-            {'response_keys': data.keys.toList()});
-
-        // Extract confidence score from the server response
-        // Use the consistent 'confidenceScore' field name from the server
-        double confidenceScore = 0.0;
-
-        if (data.containsKey('confidenceScore')) {
-          // Direct extraction from our standard field name
-          confidenceScore = _extractDoubleValue(data['confidenceScore']);
-          ConfidenceTracker.logScore(
-              "2_FOUND_CONFIDENCE_SCORE", confidenceScore);
-          dev.log("Using confidenceScore field: $confidenceScore",
-              name: 'ModelConfidence');
-        }
-        // Fallback to class probabilities if available
-        else if (data.containsKey('class_probabilities')) {
-          final Map<String, dynamic> probabilities =
-              data['class_probabilities'];
-          dev.log("Class probabilities found: $probabilities",
-              name: 'ModelConfidence');
-          confidenceScore = probabilities.values
-              .map((v) => _extractDoubleValue(v))
-              .reduce((a, b) => a > b ? a : b);
-          ConfidenceTracker.logScore(
-              "2_USING_CLASS_PROBABILITIES", confidenceScore, probabilities);
-          dev.log("Using highest probability: $confidenceScore",
-              name: 'ModelConfidence');
-        }
-        // Try legacy field names
-        else if (data.containsKey('confidence')) {
-          confidenceScore = _extractDoubleValue(data['confidence']);
-          ConfidenceTracker.logScore(
-              "2_USING_LEGACY_CONFIDENCE", confidenceScore);
-          dev.log("Using legacy confidence field: $confidenceScore",
-              name: 'ModelConfidence');
-        } else if (data.containsKey('score')) {
-          confidenceScore = _extractDoubleValue(data['score']);
-          ConfidenceTracker.logScore("2_USING_SCORE_FIELD", confidenceScore);
-          dev.log("Using score field: $confidenceScore",
-              name: 'ModelConfidence');
-        }
-        // Handle case when no confidence data is available
-        else {
-          dev.log(
-              "No confidence data found in model response. Using default value.",
-              name: 'ModelConfidence');
-          dev.log("Available fields: ${data.keys.toList()}",
-              name: 'ModelConfidence');
-          confidenceScore =
-              0.75; // Default reasonable value if no confidence provided
-          ConfidenceTracker.logScore("2_USING_DEFAULT_VALUE", confidenceScore);
-        }
-
-        // Ensure confidence score is within valid range [0,1]
-        confidenceScore = confidenceScore.clamp(0.0, 1.0);
-        ConfidenceTracker.logScore("3_AFTER_CLAMP", confidenceScore);
-
-        // Log final confidence for debugging
-        dev.log("FINAL CONFIDENCE: $confidenceScore", name: 'ConfidenceDebug');
-
-        // Extract processing time from server response
-        double? processingTime;
-        if (data.containsKey('processing_time_sec')) {
-          processingTime = _extractDoubleValue(data['processing_time_sec']);
-          dev.log("Processing time from server: $processingTime",
-              name: 'ServerDebug');
-        }
-
-        // Create prediction with guaranteed double confidence score
-        final Map<String, dynamic> prediction = {
-          "text": data['prediction'],
-          "icon": _getPredictionIcon(data['prediction']),
-          "color": _getPredictionColor(data['prediction']),
-          "imagePath": imageFile.path,
-          "timestamp": DateTime.now().toString(),
-          "confidenceScore": confidenceScore,
-          // Make sure to include processing time
-          "processingTime": processingTime,
-        };
-
-        ConfidenceTracker.logScore(
-            "4_PREDICTION_OBJECT",
-            prediction["confidenceScore"],
-            {'prediction_type': prediction["text"]});
-
-        // Log prediction object before saving to history
-        dev.log("PREDICTION TO SAVE: ${prediction.toString()}",
-            name: 'HistoryDebug');
-
-        // Create a direct, separate copy specifically for history to avoid reference issues
-        final Map<String, dynamic> historyItem = Map<String, dynamic>.from({
-          "text": prediction["text"],
-          "icon": prediction["icon"],
-          "color": prediction["color"],
-          "imagePath": imageFile.path,
-          "timestamp": DateTime.now().toString(),
-          // PERMANENT FIX: Always ensure confidence score is a proper double
-          "confidenceScore": double.parse(confidenceScore.toString()),
-          // Also save processing time to history
-          "processingTime": processingTime,
-        });
-
-        // Debug verification
-        dev.log("CONFIDENCE BEFORE HISTORY: $confidenceScore", name: 'FIX');
-        dev.log("CONFIDENCE IN HISTORY ITEM: ${historyItem['confidenceScore']}",
-            name: 'FIX');
-        dev.log(
-            "PROCESSING TIME IN HISTORY ITEM: ${historyItem['processingTime']}",
-            name: 'FIX');
-
-        ConfidenceTracker.logScore(
-            "5_HISTORY_ITEM", historyItem["confidenceScore"]);
-
-        // Save to history with direct copy
-        await _addToHistory(historyItem);
-
-        // Navigate to History after showing prediction details
-        setState(() {
-          _navigationIndex = 1; // Set to History tab
-          _selectedIndex = 1;
-        });
-
-        // Immediately navigate to prediction details screen
-        if (!mounted) return;
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PredictionDetailsScreen(
-              imagePath: imageFile.path,
-              prediction: prediction,
-              timestamp: DateTime.now().toString(),
-              onNavigate: (index) {
-                navigateToTab(index);
-              },
+        final request = http.MultipartRequest('POST', uri)
+          ..files.add(
+            await http.MultipartFile.fromPath(
+              'image',
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
             ),
-          ),
-        );
-      } else if (response.statusCode == 400) {
-        // Handle 400 Bad Request - Likely not a chicken breast image
-        if (!mounted) return;
-        _showErrorDialog(
-            'Unable to analyze this image. Please ensure you are uploading a clear image of chicken breast.',
-            title: 'Analysis Failed');
-      } else if (response.statusCode == 500) {
-        // Handle 500 Internal Server Error
-        if (!mounted) return;
-        _showErrorDialog(
-            'The server encountered an internal error. Please try again later.',
-            title: 'Server Error');
-      } else {
-        // Handle other status codes
-        if (!mounted) return;
-        _showErrorDialog('Server error: ${response.statusCode}');
-      }
-    } catch (e) {
-      // Stop performance monitoring in case of error
-      await _performanceMonitor.stopCpuMonitoring();
-      _performanceMonitor.stopFrameMonitoring();
+          );
 
-      // Close the loading dialog
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+        // Set a timeout for the request
+        final streamedResponse =
+            await request.send().timeout(const Duration(seconds: 10));
+        final response = await http.Response.fromStream(streamedResponse);
 
-      if (!mounted) return;
-      _showErrorDialog('Network error: ${e.toString()}');
+        // Stop timer and calculate elapsed time
+        timer.stop();
+
+        // Stop performance monitoring and get results
+        await _performanceMonitor.stopCpuMonitoring();
+        _performanceMonitor.stopFrameMonitoring();
+
+        // Close the loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+
+          // Log full raw response for debugging
+          dev.log("FULL SERVER RESPONSE: ${response.body}",
+              name: 'ServerDebug');
+
+          // Track raw response for debugging confidence issues
+          ConfidenceTracker.logScore(
+              "1_RAW_SERVER_RESPONSE",
+              data.containsKey('confidenceScore')
+                  ? data['confidenceScore']
+                  : null,
+              {'response_keys': data.keys.toList()});
+
+          // Extract confidence score from the server response
+          // Use the consistent 'confidenceScore' field name from the server
+          double confidenceScore = 0.0;
+
+          if (data.containsKey('confidenceScore')) {
+            // Direct extraction from our standard field name
+            confidenceScore = _extractDoubleValue(data['confidenceScore']);
+            ConfidenceTracker.logScore(
+                "2_FOUND_CONFIDENCE_SCORE", confidenceScore);
+            dev.log("Using confidenceScore field: $confidenceScore",
+                name: 'ModelConfidence');
+          }
+          // Fallback to class probabilities if available
+          else if (data.containsKey('class_probabilities')) {
+            final Map<String, dynamic> probabilities =
+                data['class_probabilities'];
+            dev.log("Class probabilities found: $probabilities",
+                name: 'ModelConfidence');
+            confidenceScore = probabilities.values
+                .map((v) => _extractDoubleValue(v))
+                .reduce((a, b) => a > b ? a : b);
+            ConfidenceTracker.logScore(
+                "2_USING_CLASS_PROBABILITIES", confidenceScore, probabilities);
+            dev.log("Using highest probability: $confidenceScore",
+                name: 'ModelConfidence');
+          }
+          // Try legacy field names
+          else if (data.containsKey('confidence')) {
+            confidenceScore = _extractDoubleValue(data['confidence']);
+            ConfidenceTracker.logScore(
+                "2_USING_LEGACY_CONFIDENCE", confidenceScore);
+            dev.log("Using legacy confidence field: $confidenceScore",
+                name: 'ModelConfidence');
+          } else if (data.containsKey('score')) {
+            confidenceScore = _extractDoubleValue(data['score']);
+            ConfidenceTracker.logScore("2_USING_SCORE_FIELD", confidenceScore);
+            dev.log("Using score field: $confidenceScore",
+                name: 'ModelConfidence');
+          }
+          // Handle case when no confidence data is available
+          else {
+            dev.log(
+                "No confidence data found in model response. Using default value.",
+                name: 'ModelConfidence');
+            dev.log("Available fields: ${data.keys.toList()}",
+                name: 'ModelConfidence');
+            confidenceScore =
+                0.75; // Default reasonable value if no confidence provided
+            ConfidenceTracker.logScore(
+                "2_USING_DEFAULT_VALUE", confidenceScore);
+          }
+
+          // Ensure confidence score is within valid range [0,1]
+          confidenceScore = confidenceScore.clamp(0.0, 1.0);
+          ConfidenceTracker.logScore("3_AFTER_CLAMP", confidenceScore);
+
+          // Log final confidence for debugging
+          dev.log("FINAL CONFIDENCE: $confidenceScore",
+              name: 'ConfidenceDebug');
+
+          // Extract processing time from server response
+          double? processingTime;
+          if (data.containsKey('processing_time_sec')) {
+            processingTime = _extractDoubleValue(data['processing_time_sec']);
+            dev.log("Processing time from server: $processingTime",
+                name: 'ServerDebug');
+          }
+
+          // Create prediction with guaranteed double confidence score
+          final Map<String, dynamic> prediction = {
+            "text": data['prediction'],
+            "icon": _getPredictionIcon(data['prediction']),
+            "color": _getPredictionColor(data['prediction']),
+            "imagePath": imageFile.path,
+            "timestamp": DateTime.now().toString(),
+            "confidenceScore": confidenceScore,
+            // Make sure to include processing time
+            "processingTime": processingTime,
+          };
+
+          ConfidenceTracker.logScore(
+              "4_PREDICTION_OBJECT",
+              prediction["confidenceScore"],
+              {'prediction_type': prediction["text"]});
+
+          // Log prediction object before saving to history
+          dev.log("PREDICTION TO SAVE: ${prediction.toString()}",
+              name: 'HistoryDebug');
+
+          // Create a direct, separate copy specifically for history to avoid reference issues
+          final Map<String, dynamic> historyItem = Map<String, dynamic>.from({
+            "text": prediction["text"],
+            "icon": prediction["icon"],
+            "color": prediction["color"],
+            "imagePath": imageFile.path,
+            "timestamp": DateTime.now().toString(),
+            // PERMANENT FIX: Always ensure confidence score is a proper double
+            "confidenceScore": double.parse(confidenceScore.toString()),
+            // Also save processing time to history
+            "processingTime": processingTime,
+          });
+
+          // Debug verification
+          dev.log("CONFIDENCE BEFORE HISTORY: $confidenceScore", name: 'FIX');
+          dev.log(
+              "CONFIDENCE IN HISTORY ITEM: ${historyItem['confidenceScore']}",
+              name: 'FIX');
+          dev.log(
+              "PROCESSING TIME IN HISTORY ITEM: ${historyItem['processingTime']}",
+              name: 'FIX');
+
+          ConfidenceTracker.logScore(
+              "5_HISTORY_ITEM", historyItem["confidenceScore"]);
+
+          // Save to history with direct copy
+          await _addToHistory(historyItem);
+
+          // Navigate to History after showing prediction details
+          setState(() {
+            _navigationIndex = 1; // Set to History tab
+            _selectedIndex = 1;
+          });
+
+          // Immediately navigate to prediction details screen
+          if (!mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PredictionDetailsScreen(
+                imagePath: imageFile.path,
+                prediction: prediction,
+                timestamp: DateTime.now().toString(),
+                onNavigate: (index) {
+                  navigateToTab(index);
+                },
+              ),
+            ),
+          );
+
+          // Successfully processed - exit the loop
+          return;
+        } else if (response.statusCode == 400) {
+          // Handle 400 Bad Request - Likely not a chicken breast image
+          if (!mounted) return;
+          _showErrorDialog(
+              'Unable to analyze this image. Please ensure you are uploading a clear image of chicken breast.',
+              title: 'Analysis Failed');
+          return;
+        } else if (response.statusCode == 500) {
+          // Handle 500 Internal Server Error
+          if (!mounted) return;
+          _showErrorDialog(
+              'The server encountered an internal error. Please try again later.',
+              title: 'Server Error');
+          return;
+        } else {
+          // Try next server address on other status codes
+          lastException = Exception('Server error: ${response.statusCode}');
+          dev.log(
+              "Server returned status code: ${response.statusCode}. Trying next address.",
+              name: 'NetworkDebug');
+          continue;
+        }
+      } catch (e) {
+        // Log the error but continue to the next server address
+        lastException = e is Exception ? e : Exception(e.toString());
+        dev.log("Failed to connect to $serverAddress: ${e.toString()}",
+            name: 'NetworkDebug');
+      }
     }
+
+    // All server addresses failed
+
+    // Stop performance monitoring in case of error
+    await _performanceMonitor.stopCpuMonitoring();
+    _performanceMonitor.stopFrameMonitoring();
+
+    // Close the loading dialog
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+
+    if (!mounted) return;
+    _showErrorDialog(
+        'Unable to connect to the server. Please verify your server is running and check your network connection.\n\n'
+        'Technical details: ${lastException.toString()}',
+        title: 'Connection Error');
   }
 
   // Helper method to safely extract double values from any data type
