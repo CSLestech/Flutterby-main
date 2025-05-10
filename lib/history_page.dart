@@ -105,7 +105,6 @@ class HistoryPage extends StatelessWidget {
                           // Track confidence before navigation
                           ConfidenceTracker.logScore("HISTORY_ITEM_TAP",
                               item['confidenceScore'], {'index': index});
-
                           Navigator.push(
                             // Navigate to details screen when tapped
                             context,
@@ -129,6 +128,8 @@ class HistoryPage extends StatelessWidget {
                                   'fromHistory': true,
                                 },
                                 timestamp: item['timestamp'], // Pass timestamp
+                                onNavigate:
+                                    (int _) {}, // Add empty onNavigate callback
                               ),
                             ),
                           );

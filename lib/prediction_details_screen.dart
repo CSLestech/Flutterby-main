@@ -1,550 +1,837 @@
-import 'package:flutter/material.dart'; // Core Flutter UI framework
-import 'dart:io'; // For file I/O operations (loading images from file system)
-import 'dart:async'; // For asynchronous programming, including the Completer class
-import 'dart:developer' as dev; // For logging purposes
-// Import BackgroundWrapper with prefix to avoid name conflicts
-import 'package:check_a_doodle_doo/background_wrapper.dart'
-    as bg; // Custom background widget
-import 'widgets/guide_book_button.dart'; // Guide book access button for educational content
-import 'package:check_a_doodle_doo/utils/confidence_tracker.dart'; // Utility for confidence score tracking
+import 'dart:io';
 
-/// PredictionDetailsScreen displays comprehensive information about a chicken breast analysis result
-/// Shows the analyzed image with prediction results and classification information
-class PredictionDetailsScreen extends StatelessWidget {
-  final String? imagePath; // Path to the analyzed image file
-  final Map<String, dynamic>
-      prediction; // Contains prediction data (classification, icon, color)
-  final String timestamp; // When the analysis was performed
-  final Function(int)? onNavigate; // Optional callback for bottom navigation
+import 'package:check_a_doodle_doo/utils/analysis_visualizer.dart';
+import 'package:check_a_doodle_doo/utils/bounding_box_painter.dart';
+import 'package:flutter/material.dart';
 
-  /// Constructor requiring prediction data for display
+class PredictionDetailsScreen extends StatefulWidget {
+  final String imagePath;
+  final Map<String, dynamic> prediction;
+  final String timestamp;
+  final Function(int) onNavigate;
+
   const PredictionDetailsScreen({
     super.key,
-    required this.imagePath, // Image file path (nullable but typically provided)
-    required this.prediction, // Prediction result data
-    required this.timestamp, // Timestamp string of when analysis was performed
-    this.onNavigate, // Optional navigation callback
+    required this.imagePath,
+    required this.prediction,
+    required this.timestamp,
+    required this.onNavigate,
   });
 
   @override
+  State<PredictionDetailsScreen> createState() =>
+      _PredictionDetailsScreenState();
+}
+
+class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  // Analysis factors with mock values - in a real app, these would come from your model
+  final Map<String, double> _analysisFactors = {
+    "Color": 0.85,
+    "Texture": 0.78,
+    "Moisture": 0.68,
+    "Shape": 0.92,
+  };
+
+  // Mock bounding box regions - in a real app, these would come from your model
+  late List<Map<String, dynamic>> _boundingBoxes;
+
+  // Class probabilities
+  late Map<String, double> _classProbabilities;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+
+    // Initialize bounding boxes - in a real app would come from model
+    _initializeBoundingBoxes();
+
+    // Initialize probabilities based on prediction confidence
+    _initializeProbabilities();
+  }
+
+  void _initializeBoundingBoxes() {
+    // Create mock bounding boxes based on prediction type
+    final String predictionType = widget.prediction['text'];
+
+    if (predictionType == "Consumable") {
+      _boundingBoxes = [
+        {
+          "label": "Normal tissue",
+          "confidence": 0.95,
+          "color": Colors.green,
+          "rect": const Rect.fromLTWH(50, 100, 100, 70),
+        },
+        {
+          "label": "Slight discolor",
+          "confidence": 0.72,
+          "color": Colors.orange,
+          "rect": const Rect.fromLTWH(180, 120, 60, 40),
+        },
+      ];
+    } else if (predictionType == "Consumable with Caution" ||
+        predictionType == "Half-consumable") {
+      _boundingBoxes = [
+        {
+          "label": "Normal tissue",
+          "confidence": 0.75,
+          "color": Colors.green,
+          "rect": const Rect.fromLTWH(30, 90, 80, 60),
+        },
+        {
+          "label": "Discoloration",
+          "confidence": 0.85,
+          "color": Colors.orange,
+          "rect": const Rect.fromLTWH(150, 140, 100, 60),
+        },
+      ];
+    } else {
+      _boundingBoxes = [
+        {
+          "label": "Spoilage",
+          "confidence": 0.92,
+          "color": Colors.red,
+          "rect": const Rect.fromLTWH(80, 90, 140, 80),
+        },
+        {
+          "label": "Texture issue",
+          "confidence": 0.86,
+          "color": Colors.red,
+          "rect": const Rect.fromLTWH(40, 180, 90, 50),
+        },
+      ];
+    }
+  }
+
+  void _initializeProbabilities() {
+    // In a real app, these would come from your model
+    // Here we're simulating based on the confidence score
+    final double confidence = widget.prediction['confidenceScore'] ?? 0.75;
+
+    if (widget.prediction['text'] == "Consumable") {
+      _classProbabilities = {
+        "Consumable": confidence,
+        "Consumable with Caution": (1.0 - confidence) * 0.8,
+        "Not Consumable": (1.0 - confidence) * 0.2,
+      };
+    } else if (widget.prediction['text'] == "Consumable with Caution" ||
+        widget.prediction['text'] == "Half-consumable") {
+      _classProbabilities = {
+        "Consumable": (1.0 - confidence) * 0.4,
+        "Consumable with Caution": confidence,
+        "Not Consumable": (1.0 - confidence) * 0.6,
+      };
+    } else {
+      _classProbabilities = {
+        "Consumable": (1.0 - confidence) * 0.1,
+        "Consumable with Caution": (1.0 - confidence) * 0.3,
+        "Not Consumable": confidence,
+      };
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  // Format datetime as a readable string
+  String formatDateTime(String timestamp) {
+    DateTime dateTime = DateTime.parse(timestamp);
+    return "${_getMonthName(dateTime.month)} ${dateTime.day}, ${dateTime.year} - "
+        "${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')} "
+        "${dateTime.hour >= 12 ? 'PM' : 'AM'}";
+  }
+
+  // Helper method to get month name
+  String _getMonthName(int month) {
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return monthNames[month - 1];
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Build a scaffold with specialized UI for displaying prediction details
     return Scaffold(
       appBar: AppBar(
-        backgroundColor:
-            const Color(0xFF3E2C1C), // Deep brown app bar background
-        elevation: 4, // Slight shadow for depth
-        iconTheme: const IconThemeData(
-            color: Color(0xFFF3E5AB)), // Light cream icon color
-        titleTextStyle: const TextStyle(
-          color: Color(0xFFF3E5AB), // Light cream text color
-          fontFamily: 'Garamond', // Brand font
-          fontSize: 22, // Larger title text
-          fontWeight: FontWeight.w600, // Semi-bold for emphasis
-        ),
-        title: const Text("Prediction Details"), // Screen title
-        centerTitle: false, // Left-align title for consistency with home screen
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back), // Back arrow icon
-          onPressed: () {
-            // Simply pop back to previous screen (usually history)
-            Navigator.pop(context);
-          },
-        ),
-        actions: const [
-          GuideBookButton(), // Add guide book access to app bar
-        ],
-      ),
-      // Use the background wrapper for consistent visual style
-      body: bg.BackgroundWrapper(
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Image display section - only if image exists
-              if (imagePath != null && File(imagePath!).existsSync())
-                Expanded(
-                  flex: 3, // Takes up approximately 60% of available space
-                  child: _buildImprovedImageDisplay(context),
-                ),
-
-              // Prediction result container - styled based on classification type
-              Expanded(
-                flex: 2, // Takes up approximately 40% of available space
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _buildPredictionCard(prediction),
-                  ),
-                ),
-              ),
-            ],
+        backgroundColor: const Color(0xFF3E2C1C),
+        foregroundColor: const Color(0xFFF3E5AB),
+        title: const Text(
+          "Analysis Results",
+          style: TextStyle(
+            color: Color(0xFFF3E5AB),
+            fontFamily: "Garamond",
+            fontSize: 22,
           ),
         ),
-      ),
-      // Bottom navigation bar - consistent with other screens
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          splashFactory: NoSplash.splashFactory, // Remove ripple effect
-          highlightColor: Colors.transparent, // Remove highlight effect
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: const Color(0xFFF3E5AB),
+          labelColor: const Color(0xFFF3E5AB),
+          unselectedLabelColor: const Color(0xFFF3E5AB).withAlpha(178),
+          tabs: const [
+            Tab(text: "Overview"),
+            Tab(text: "Breakdown"),
+            Tab(text: "Details"),
+          ],
         ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType
-              .fixed, // Fixed layout for consistent positioning
-          backgroundColor:
-              const Color.fromARGB(255, 194, 184, 146), // Warm cream background
-          selectedItemColor:
-              const Color(0xFF3E2C1C), // Dark brown for selected item
-          unselectedItemColor:
-              Colors.black.withAlpha(77), // 30% black for unselected items
-          currentIndex: 1, // Set to History (index 1) as the active tab
-          onTap: (index) {
-            Navigator.pop(context); // First return to previous screen
-            if (onNavigate != null) {
-              onNavigate!(index); // Then navigate to the selected tab
-            }
-          },
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.history),
-              label: 'History',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.camera_alt),
-              label: 'Camera',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.info),
-              label: 'About',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.help),
-              label: 'Help',
-            ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: _shareResults,
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('images/ui/main_bg.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildOverviewTab(),
+            _buildBreakdownTab(),
+            _buildDetailsTab(),
           ],
         ),
       ),
     );
   }
 
-  /// Improved image display with interactive zooming and better sizing
-  Widget _buildImprovedImageDisplay(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: InteractiveViewer(
-        minScale: 0.8,
-        maxScale: 3.0,
-        child: FutureBuilder<Size>(
-          future: _getImageDimension(File(imagePath!)),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF3E2C1C),
-                ),
-              );
-            }
-
-            // Dynamic calculation for best fit
-            if (snapshot.hasData) {
-              final imageSize = snapshot.data!;
-              final aspectRatio = imageSize.width / imageSize.height;
-              final isLandscape = aspectRatio > 1.0;
-
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  // Calculate the best fit size based on available space and aspect ratio
-                  double width, height;
-
-                  if (isLandscape) {
-                    // For landscape images, fit width first
-                    width = constraints.maxWidth;
-                    height = width / aspectRatio;
-
-                    // If height is too tall, adjust both
-                    if (height > constraints.maxHeight * 0.9) {
-                      height = constraints.maxHeight * 0.9;
-                      width = height * aspectRatio;
-                    }
-                  } else {
-                    // For portrait images, fit height first
-                    height = constraints.maxHeight * 0.9;
-                    width = height * aspectRatio;
-
-                    // If width is too wide, adjust both
-                    if (width > constraints.maxWidth) {
-                      width = constraints.maxWidth;
-                      height = width / aspectRatio;
-                    }
-                  }
-
-                  return Center(
-                    child: SizedBox(
-                      width: width,
-                      height: height,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                            8), // Slight rounding of the image corners
-                        child: Image.file(
-                          File(imagePath!),
-                          fit: BoxFit
-                              .contain, // Ensure the entire image is visible without cropping
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey.shade200,
-                              child: const Center(
-                                child: Icon(
-                                  Icons.broken_image,
-                                  size: 48,
-                                  color: Colors.grey,
-                                ),
+  Widget _buildOverviewTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Visual Analysis section
+          const Text(
+            "Visual Analysis",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3E2C1C),
+              fontFamily: "Garamond",
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            color: Colors.white,
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Stack(
+                children: [
+                  // Image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.file(
+                      File(widget.imagePath),
+                      fit: BoxFit.contain,
+                      height: 300,
+                      width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 300,
+                          width: double.infinity,
+                          color: Colors.grey.shade200,
+                          child: const Center(
+                            child: Text(
+                              "Image not found or cannot be displayed.\nPlease select a valid image.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF3E2C1C),
                               ),
-                            );
-                          },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ), // Bounding boxes overlay with proper sizing
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SizedBox(
+                        height: 300,
+                        width: double.infinity,
+                        child: CustomPaint(
+                          size: Size(constraints.maxWidth, 300),
+                          painter:
+                              BoundingBoxPainter(boundingBoxes: _boundingBoxes),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24), // Result Card with Confidence Score
+          Card(
+            color: const Color(0xFFF3E5AB),
+            elevation: 4,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        widget.prediction['icon'],
+                        color: widget.prediction['color'],
+                        size: 40,
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      widget.prediction['text'],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: widget.prediction['color'],
+                        fontFamily: "Garamond",
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Confidence Score: ${((widget.prediction['confidenceScore'] ?? 0.0) * 100).toStringAsFixed(1)}%",
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontFamily: "Garamond",
+                      color: Color(0xFF3E2C1C),
+                    ),
+                  ),
+                  if (widget.prediction.containsKey('processingTime'))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        "Processing Time: ${(widget.prediction['processingTime'] as double).toStringAsFixed(2)} sec",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontFamily: "Garamond",
+                          color: const Color(0xFF3E2C1C).withAlpha(200),
                         ),
                       ),
                     ),
-                  );
-                },
-              );
-            }
+                ],
+              ),
+            ),
+          ),
 
-            // Fallback if dimensions couldn't be determined
-            return Center(
-              child: Image.file(
-                File(imagePath!),
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey.shade200,
-                    child: const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        size: 48,
-                        color: Colors.grey,
+          const SizedBox(height: 24),
+
+          // Analysis Summary
+          const Text(
+            "Analysis Summary",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3E2C1C),
+              fontFamily: "Garamond",
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            color: const Color(0xFFF3E5AB),
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.prediction['text'] == "Consumable"
+                        ? "This chicken breast appears fresh and safe for consumption."
+                        : widget.prediction['text'] ==
+                                    "Consumable with Caution" ||
+                                widget.prediction['text'] == "Half-consumable"
+                            ? "This chicken breast is at the transition stage. Cook thoroughly and consume soon."
+                            : "This chicken breast shows signs of spoilage and is not recommended for consumption.",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontFamily: "Garamond",
+                      color: Color(0xFF3E2C1C),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Key Factors:",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: "Garamond",
+                      color: Color(0xFF3E2C1C),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (var factor in _analysisFactors.entries)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: AnalysisVisualizer.buildFactorBar(
+                        factor.key,
+                        factor.value,
+                        AnalysisVisualizer.getColorFromFactor(factor.value),
                       ),
                     ),
-                  );
-                },
+                ],
               ),
-            );
-          },
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Helper method to get image dimensions
-  Future<Size> _getImageDimension(File imageFile) async {
-    final Completer<Size> completer =
-        Completer(); // Create completer for async result
-    final image = Image.file(imageFile); // Load image from file
-    // Listen for image to complete loading
-    image.image.resolve(const ImageConfiguration()).addListener(
-      ImageStreamListener(
-        (ImageInfo info, bool _) {
-          completer.complete(Size(
-            info.image.width.toDouble(), // Get width
-            info.image.height.toDouble(), // Get height
-          ));
-        },
+  Widget _buildBreakdownTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Class Probabilities
+          const Text(
+            "Classification Probability",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3E2C1C),
+              fontFamily: "Garamond",
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            color: const Color(0xFFF3E5AB),
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Probability of each classification",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: "Garamond",
+                      color: Color(0xFF3E2C1C),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  AnalysisVisualizer.buildClassBar('Consumable',
+                      _classProbabilities['Consumable']!, Colors.green),
+                  const SizedBox(height: 12),
+                  AnalysisVisualizer.buildClassBar(
+                      'Consumable with Caution',
+                      _classProbabilities['Consumable with Caution']!,
+                      Colors.orange),
+                  const SizedBox(height: 12),
+                  AnalysisVisualizer.buildClassBar('Not Consumable',
+                      _classProbabilities['Not Consumable']!, Colors.red),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Feature Importance
+          const Text(
+            "Analysis Breakdown",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3E2C1C),
+              fontFamily: "Garamond",
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            color: const Color(0xFFF3E5AB),
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Color Analysis
+                  AnalysisVisualizer.buildFactorBar(
+                      'Color',
+                      _analysisFactors['Color']!,
+                      AnalysisVisualizer.getColorFromFactor(
+                          _analysisFactors['Color']!)),
+                  const SizedBox(height: 8),
+                  Text(
+                    AnalysisVisualizer.getFactorDescription(
+                        'Color', widget.prediction['text']),
+                    style:
+                        const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Texture Analysis
+                  AnalysisVisualizer.buildFactorBar(
+                      'Texture',
+                      _analysisFactors['Texture']!,
+                      AnalysisVisualizer.getColorFromFactor(
+                          _analysisFactors['Texture']!)),
+                  const SizedBox(height: 8),
+                  Text(
+                    AnalysisVisualizer.getFactorDescription(
+                        'Texture', widget.prediction['text']),
+                    style:
+                        const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Moisture Analysis
+                  AnalysisVisualizer.buildFactorBar(
+                      'Moisture',
+                      _analysisFactors['Moisture']!,
+                      AnalysisVisualizer.getColorFromFactor(
+                          _analysisFactors['Moisture']!)),
+                  const SizedBox(height: 8),
+                  Text(
+                    AnalysisVisualizer.getFactorDescription(
+                        'Moisture', widget.prediction['text']),
+                    style:
+                        const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Shape Analysis
+                  AnalysisVisualizer.buildFactorBar(
+                      'Shape',
+                      _analysisFactors['Shape']!,
+                      AnalysisVisualizer.getColorFromFactor(
+                          _analysisFactors['Shape']!)),
+                  const SizedBox(height: 8),
+                  Text(
+                    AnalysisVisualizer.getFactorDescription(
+                        'Shape', widget.prediction['text']),
+                    style:
+                        const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
-    return completer.future; // Return future for dimensions
   }
 
-  /// Builds the prediction card with confidence score display
-  Widget _buildPredictionCard(Map<String, dynamic> prediction) {
-    // Debug: Log received prediction to see what fields are available
-    dev.log("🔎 DISPLAYING PREDICTION: ${prediction.toString()}",
-        name: 'DetailsScreen');
+  Widget _buildDetailsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image timestamp section
+          Card(
+            color: const Color(0xFFF3E5AB),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Image Information",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: "Garamond",
+                      color: Color(0xFF3E2C1C),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today,
+                          color: Color(0xFF3E2C1C), size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Analyzed: ${formatDateTime(widget.timestamp)}",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: "Garamond",
+                          color: Color(0xFF3E2C1C),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.image,
+                          color: Color(0xFF3E2C1C), size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "File: ${widget.imagePath.split('/').last}",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: "Garamond",
+                            color: Color(0xFF3E2C1C),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
 
-    // Add more comprehensive logging with our tracker
-    ConfidenceTracker.logScore(
-        "DETAILS_SCREEN_RECEIVED",
-        prediction.containsKey('confidenceScore')
-            ? prediction['confidenceScore']
-            : null,
-        {
-          'prediction_type': prediction['text'],
-          'all_keys': prediction.keys.toList()
-        });
+          const SizedBox(height: 24),
 
-    // Get the confidence score from the prediction data (default to 0.0 if not present)
-    double confidenceScore = 0.0;
+          // Region of Interest Analysis
+          const Text(
+            "Region of Interest Analysis",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3E2C1C),
+              fontFamily: "Garamond",
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            color: const Color(0xFFF3E5AB),
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var box in _boundingBoxes)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: box['color'],
+                              shape: BoxShape.rectangle,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "${box['label']} (${(box['confidence'] * 100).toStringAsFixed(0)}% confidence)",
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: "Garamond",
+                                    color: Color(0xFF3E2C1C),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  box['label'].toString().contains("Normal")
+                                      ? "This area shows characteristics of fresh chicken breast tissue with normal coloration and texture."
+                                      : box['label']
+                                              .toString()
+                                              .contains("color")
+                                          ? "This area shows changes in color that could indicate early-stage quality degradation."
+                                          : box['label']
+                                                  .toString()
+                                                  .contains("Texture")
+                                              ? "This area shows abnormal texture that suggests quality degradation."
+                                              : "This area shows characteristics suggesting potential spoilage.",
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: "Garamond",
+                                    color: Color(0xFF3E2C1C),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
 
-    // CRITICAL FIX: Extract confidence score with improved error handling
-    try {
-      // Check for confidence score in the standard field 'confidenceScore'
-      if (prediction.containsKey('confidenceScore')) {
-        final dynamic rawScore = prediction['confidenceScore'];
-        ConfidenceTracker.logScore("DETAILS_EXTRACTING_CONFIDENCE", rawScore,
-            {'type': rawScore?.runtimeType.toString()});
+          const SizedBox(height: 24),
 
-        if (rawScore != null) {
-          if (rawScore is double) {
-            confidenceScore = rawScore;
-          } else if (rawScore is num) {
-            confidenceScore = rawScore.toDouble();
-          } else if (rawScore is String) {
-            confidenceScore = double.tryParse(rawScore) ?? 0.0;
-          }
-        }
-        ConfidenceTracker.logScore(
-            "DETAILS_EXTRACTED_CONFIDENCE", confidenceScore);
-      }
-      // Legacy support for 'confidence' field
-      else if (prediction.containsKey('confidence')) {
-        final dynamic rawScore = prediction['confidence'];
-        ConfidenceTracker.logScore("DETAILS_EXTRACTING_LEGACY", rawScore,
-            {'type': rawScore?.runtimeType.toString()});
-
-        if (rawScore != null) {
-          if (rawScore is double) {
-            confidenceScore = rawScore;
-          } else if (rawScore is num) {
-            confidenceScore = rawScore.toDouble();
-          } else if (rawScore is String) {
-            confidenceScore = double.tryParse(rawScore) ?? 0.0;
-          }
-        }
-        ConfidenceTracker.logScore("DETAILS_EXTRACTED_LEGACY", confidenceScore);
-      }
-
-      // EMERGENCY FIX: Log if we have a zero confidence after extraction
-      if (confidenceScore == 0.0) {
-        dev.log(
-            "⚠️ WARNING: Zero confidence score detected. Keys in prediction: ${prediction.keys.toList()}",
-            name: 'DetailsScreen');
-
-        // As a last resort, check if we have history context
-        if (prediction.containsKey('fromHistory') &&
-            prediction['fromHistory'] == true) {
-          // For history items, show a default score if not available
-          confidenceScore = 0.75;
-          dev.log("Using default confidence for history item",
-              name: 'DetailsScreen');
-        }
-      }
-
-      // Ensure confidence is within range
-      confidenceScore = confidenceScore.clamp(0.0, 1.0);
-      ConfidenceTracker.logScore("DETAILS_FINAL_CONFIDENCE", confidenceScore);
-    } catch (e) {
-      // Catch any errors in confidence extraction and use a default
-      dev.log("Error extracting confidence score: $e", name: 'DetailsScreen');
-      confidenceScore = 0.75; // Use reasonable default
-    }
-
-    // Debug: Log the extracted confidence score
-    dev.log("🔎 USING CONFIDENCE SCORE: $confidenceScore",
-        name: 'DetailsScreen');
-
-    // Format the confidence score as a percentage
-    final String confidencePercentage =
-        '${(confidenceScore * 100).toStringAsFixed(1)}%';
-
-    // Determine confidence level color
-    Color confidenceColor;
-    if (confidenceScore >= 0.85) {
-      confidenceColor = Colors.green;
-    } else if (confidenceScore >= 0.70) {
-      confidenceColor = Colors.orange;
-    } else if (confidenceScore > 0.0) {
-      // Ensure we're not showing green for 0.0
-      confidenceColor = Colors.red;
-    } else {
-      // Special case for zero confidence score
-      confidenceColor = Colors.grey;
-    }
-
-    // Add confidence level description text
-    String confidenceLevelText;
-    if (confidenceScore >= 0.90) {
-      confidenceLevelText = "High";
-    } else if (confidenceScore >= 0.70) {
-      confidenceLevelText = "Medium";
-    } else if (confidenceScore > 0.0) {
-      confidenceLevelText = "Low";
-    } else {
-      confidenceLevelText = "Low Confidence";
-    }
-
-    // Extract processing time if available
-    String processingTimeText = "Not available";
-    double? processingTime;
-
-    if (prediction.containsKey('processingTime') &&
-        prediction['processingTime'] != null) {
-      final dynamic rawTime = prediction['processingTime'];
-
-      if (rawTime is double) {
-        processingTime = rawTime;
-      } else if (rawTime is num) {
-        processingTime = rawTime.toDouble();
-      } else if (rawTime is String) {
-        processingTime = double.tryParse(rawTime);
-      }
-
-      if (processingTime != null) {
-        processingTimeText = "${processingTime.toStringAsFixed(2)} seconds";
-      }
-    }
-
-    return Card(
-      elevation: 4,
-      margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      color: const Color(0xFFF3E5AB), // Warm cream background
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  prediction['icon'],
-                  size: 40,
-                  color: prediction['color'],
-                ),
-                const SizedBox(width: 16),
-                Expanded(
+          // Recommendation
+          Builder(
+            builder: (context) {
+              final recommendation = AnalysisVisualizer.getRecommendation(
+                  widget.prediction['text']);
+              return Card(
+                color: recommendation['bgColor'],
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Prediction Result",
+                        recommendation['title'],
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey[700],
                           fontFamily: "Garamond",
+                          color: recommendation['color'],
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Text(
-                        prediction['text'].toString(),
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: prediction['color'],
+                        recommendation['text'],
+                        style: const TextStyle(
+                          fontSize: 16,
                           fontFamily: "Garamond",
+                          color: Color(0xFF3E2C1C),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _shareResults() {
+    String resultType = widget.prediction['text'];
+    double confidenceScore = widget.prediction['confidenceScore'] ?? 0.0;
+
+    String shareText = "Check-A-Doodle-Doo Analysis Results:\n"
+        "Classification: $resultType\n"
+        "Confidence: ${(confidenceScore * 100).toStringAsFixed(1)}%\n"
+        "Analyzed on: ${formatDateTime(widget.timestamp)}";
+
+    // For Flutter apps without share_plus, we just show a dialog with the text
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFF3E5AB),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text(
+            "Share Results",
+            style: TextStyle(
+              color: Color(0xFF3E2C1C),
+              fontFamily: "Garamond",
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 20),
-
-            // Add confidence score display with fixed layout
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF3E2C1C).withAlpha(26),
-                borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: const Color(0xFF3E2C1C).withAlpha(40)),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Here's your analysis result:",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                  fontSize: 16,
+                ),
               ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.analytics_outlined,
-                    size: 20,
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border:
+                      Border.all(color: const Color(0xFF3E2C1C).withAlpha(100)),
+                ),
+                child: SelectableText(
+                  shareText,
+                  style: const TextStyle(
                     color: Color(0xFF3E2C1C),
+                    fontFamily: "Garamond",
+                    fontSize: 14,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Confidence: ",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[800],
-                      fontFamily: "Garamond",
-                    ),
-                  ),
-                  Text(
-                    confidencePercentage,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: confidenceColor,
-                      fontFamily: "Garamond",
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      "($confidenceLevelText)",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
-                        color: confidenceColor,
-                        fontFamily: "Garamond",
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Add processing time display
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF3E2C1C).withAlpha(15),
-                borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: const Color(0xFF3E2C1C).withAlpha(30)),
+              const SizedBox(height: 8),
+              const Text(
+                "Long-press to copy the text",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.timer_outlined,
-                    size: 20,
-                    color: Color(0xFF3E2C1C),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "Processing Time: ",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[800],
-                      fontFamily: "Garamond",
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      processingTimeText,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[800],
-                        fontFamily: "Garamond",
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                "Close",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                ),
               ),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

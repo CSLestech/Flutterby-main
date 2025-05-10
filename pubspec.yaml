@@ -1,5 +1,5 @@
 name: check_a_doodle_doo
-description: "A new Flutter project."
+description: "A Flutter application for checking chicken breast freshness."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -43,6 +43,7 @@ dependencies:
   http_parser: ^4.0.0
   flutter_tts: ^3.8.3
   url_launcher: ^6.2.2
+  fl_chart: ^0.65.0  # Add this line for charts in the mockup
 
 dev_dependencies:
   flutter_test:

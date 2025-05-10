@@ -1,0 +1,23 @@
+To back up your main app files, you can do the following:
+
+1. Copy these files to the backups folder before making changes:
+   - prediction_details_screen.dart
+   - home_view.dart
+   - main.dart
+   - about_page.dart
+   - help_page.dart
+   - history_page.dart
+   - Any other .dart files in the lib folder
+
+2. For restoring:
+   - Simply copy the desired file from the backups folder back to its original location
+   - Remember to restart the Flutter app after restoring files
+
+3. The new files we created can be deleted if reverting:
+   - utils/bounding_box_painter.dart
+   - utils/analysis_visualizer.dart
+   
+Backup completed on: [DATE]
+
+Note: This backup approach allows you to switch between the original and enhanced versions
+of the analysis screen whenever needed.
