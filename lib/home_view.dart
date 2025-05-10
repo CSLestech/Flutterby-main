@@ -728,15 +728,15 @@ class HomeViewState extends State<HomeView>
     _performanceMonitor.startFrameMonitoring(this);
 
     dev.log("🔍 Starting image classification performance test",
-        name: 'PerformanceTest');
-
-    // List of possible server addresses to try in order
+        name:
+            'PerformanceTest'); // List of possible server addresses to try in order
     final List<String> serverAddresses = [
-      "http:/192.168.150.180:5000/predict", // Primary address
+      "http://172.30.8.13:5000/predict", // Primary address
       "http://192.168.31.180:5000/predict", // Alternative address 1
-      "http://172.30.48.1:5000/predict", // Alternative address 2
+      "http://192.168.218.180:5000/predict", // Alternative address 2
       "http://172.31.80.1:5000/predict", // For Android emulator
-      "http://10.0.2.2:5000/predict" // For iOS simulator
+      "http://10.0.2.2:5000/predict", // For iOS simulator
+      "http://localhost:5000/predict" // Local development server
     ];
 
     Exception? lastException;
