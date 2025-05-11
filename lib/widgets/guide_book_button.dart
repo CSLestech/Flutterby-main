@@ -19,106 +19,7 @@ class GuideBookContent {
             'Learn how to identify the three categories of chicken breast quality', // Explanatory subtitle
         'tips': [
           {
-            'number': 1, // Original lesson 7 now becomes tip 1
-            'title': 'Chicken Breed and Quality', // Focus on chicken breeds
-            'content':
-                'This app was specifically calibrated for Broiler Hybrid (Magnolia) chicken, but quality assessment is similar across breeds:', // Introduction
-            'additionalInformation': [
-              // Information about chicken breeds
-              {
-                'text': 'Broiler Hybrid (Magnolia)', // Primary breed used
-                'color': Colors.deepPurple,
-                'icon': Icons.verified,
-                'description':
-                    'The chicken breed used for calibrating this application' // Calibration info
-              },
-              {
-                'text': 'Breed Variations', // Variations between breeds
-                'color': Colors.indigo,
-                'icon': Icons.compare,
-                'description':
-                    'Fat color may vary slightly between breeds; some naturally have more yellow fat' // Breed differences
-              },
-              {
-                'text': 'Growth Conditions', // Environmental factors
-                'color': Colors.blue,
-                'icon': Icons.eco,
-                'description':
-                    'Diet and raising conditions can affect chicken meat color and texture' // External factors
-              },
-            ],
-          },
-          {
-            'number': 2, // Original lesson 1 now becomes tip 2
-            'title':
-                'Classification System Overview', // Title of this specific tip
-            'content':
-                'Our app classifies chicken breast into three categories based on freshness and safety for consumption:', // Main descriptive content
-            'additionalInformation': [
-              // List of classification options with their attributes
-              {
-                'text': 'Consumable', // Name of classification category
-                'color':
-                    primaryBrown, // Visual color indicator for this category
-                'icon': Icons.check_circle, // Icon representing this category
-                'description':
-                    'chicken that is safe to eat with normal cooking methods', // Detailed explanation
-                'imagePath':
-                    'images/ui/consumable204.jpg', // Example image of consumable chicken
-              },
-              {
-                'text': 'Half-Consumable', // Second classification category
-                'color': secondaryBrown, // Medium brown for caution indicator
-                'icon': Icons.warning, // Warning icon for caution
-                'description':
-                    'Chicken showing early signs of deterioration but can still be safely eaten if thoroughly cooked', // Detailed explanation
-                'imagePath':
-                    'images/ui/halfconsumable195.jpg', // Example image of half-consumable chicken
-              },
-              {
-                'text': 'Not Consumable', // Third classification category
-                'color': Colors.red, // Red for danger/warning
-                'icon': Icons.cancel, // Cancel icon indicating unsafe
-                'description':
-                    'Spoiled chicken that should not be consumed under any circumstances', // Safety warning
-                'imagePath':
-                    'images/ui/notconsumable408.jpg', // Example image of spoiled chicken
-              },
-            ],
-          },
-          {
-            'number': 3, // Original lesson 8 now becomes tip 3
-            'title':
-                'Commercial Grading Standards', // Focus on industry standards
-            'content':
-                'Industry standards for chicken quality classification use letter grades:', // Introduction
-            'additionalInformation': [
-              // Commercial quality classifications
-              {
-                'text': 'Class A (Yellow)', // Highest commercial grade
-                'color': Colors.amber,
-                'icon': Icons.star,
-                'description':
-                    'Premium quality with excellent color, conformation, and no defects' // Description of A grade
-              },
-              {
-                'text': 'Class B (Orange)', // Medium commercial grade
-                'color': Colors.orange,
-                'icon': Icons.star_half,
-                'description':
-                    'Good quality with minor defects in appearance or minor discolorations' // Description of B grade
-              },
-              {
-                'text': 'Class C (Green)', // Lowest commercial grade
-                'color': Colors.green,
-                'icon': Icons.star_outline,
-                'description':
-                    'Acceptable with some defects but still suitable for certain uses' // Description of C grade
-              },
-            ],
-          },
-          {
-            'number': 4, // Original lesson 2 now becomes tip 4
+            'number': 1, // Original lesson 2 now becomes tip 1
             'title':
                 'Consumable Chicken Characteristics', // Focus on consumable chicken traits
             'content':
@@ -157,7 +58,7 @@ class GuideBookContent {
             ],
           },
           {
-            'number': 5, // Original lesson 3 now becomes tip 5
+            'number': 2, // Original lesson 3 now becomes tip 2
             'title':
                 'Half-Consumable Chicken Characteristics', // Focus on half-consumable chicken
             'content':
@@ -189,7 +90,7 @@ class GuideBookContent {
             ],
           },
           {
-            'number': 6, // Original lesson 4 now becomes tip 6
+            'number': 3, // Original lesson 4 now becomes tip 3
             'title':
                 'Not Consumable Chicken Characteristics', // Focus on unsafe chicken
             'content':
@@ -229,7 +130,7 @@ class GuideBookContent {
             ],
           },
           {
-            'number': 7, // Original lesson 6 now becomes tip 7
+            'number': 4, // Original lesson 6 now becomes tip 4
             'title': 'Shelf Life & Storage Duration',
             'content':
                 'Our study monitored chicken breast deterioration over a 3-day period at refrigeration temperature:', // Study methodology explanation
@@ -269,7 +170,7 @@ class GuideBookContent {
             'thumbnailUrl':
                 'https://i.ytimg.com/vi/_ohJqkeNrb4/maxresdefault.jpg', // Video thumbnail
             'videoTitle': 'Chicken Timelapse', // Title of the video
-          },
+          }
         ],
         'visualParameters': [
           // Visual parameters for learning about chicken quality assessment
@@ -286,12 +187,6 @@ class GuideBookContent {
             'image': 'images/ui/9.png', // Fixed: Added file extension
           },
           {
-            'title': 'Breed Considerations', // Focus on breed differences
-            'description':
-                'This application is calibrated for Broiler Hybrid (Magnolia) chicken breast. While the general principles apply to all chicken types, there may be slight variations in color and texture between breeds. Broiler chickens typically have lighter meat compared to free-range or heritage breeds.',
-            'image': 'images/ui/breed.png', // Fixed: Added file extension
-          },
-          {
             'title': 'Experimental Design', // Focus on study methodology
             'description':
                 'The 3-day experiment used Broiler Hybrid (Magnolia) chicken breast stored in standard refrigeration. Images were captured under controlled lighting conditions at 24-hour intervals. The model analyzes visual characteristics that correlate with microbiological testing results to determine which classification category the chicken belongs in.',
@@ -305,9 +200,9 @@ class GuideBookContent {
               'Day 2: Chicken Breast Sample Beginning Deterioration',
               'Day 3: Notable Chicken Breast Visual Deterioration'
             ], // Labels for the experiment images
-          },
-        ],
-      },
+          }
+        ]
+      }
       // You can add more guide pages here
     ];
   }
