@@ -4,13 +4,13 @@ import 'package:check_a_doodle_doo/utils/analysis_visualizer.dart';
 import 'package:check_a_doodle_doo/utils/bounding_box_painter.dart';
 import 'package:flutter/material.dart';
 
-class PredictionDetailsScreen extends StatefulWidget {
+class NewPredictionDetailsScreen extends StatefulWidget {
   final String imagePath;
   final Map<String, dynamic> prediction;
   final String timestamp;
   final Function(int) onNavigate;
 
-  const PredictionDetailsScreen({
+  const NewPredictionDetailsScreen({
     super.key,
     required this.imagePath,
     required this.prediction,
@@ -19,11 +19,11 @@ class PredictionDetailsScreen extends StatefulWidget {
   });
 
   @override
-  State<PredictionDetailsScreen> createState() =>
-      _PredictionDetailsScreenState();
+  State<NewPredictionDetailsScreen> createState() =>
+      _NewPredictionDetailsScreenState();
 }
 
-class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
+class _NewPredictionDetailsScreenState extends State<NewPredictionDetailsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   // Analysis factors with mock values - in a real app, these would come from your model
@@ -33,16 +33,23 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
     "Moisture": 0.68,
     "Shape": 0.92,
   };
+
   // Mock bounding box regions - in a real app, these would come from your model
   late List<Map<String, dynamic>> _boundingBoxes;
+
+  // Class probabilities
+  late Map<String, double> _classProbabilities;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
 
     // Initialize bounding boxes - in a real app would come from model
     _initializeBoundingBoxes();
+
+    // Initialize probabilities based on prediction confidence
+    _initializeProbabilities();
   }
 
   void _initializeBoundingBoxes() {
@@ -95,6 +102,33 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
           "rect": const Rect.fromLTWH(40, 180, 90, 50),
         },
       ];
+    }
+  }
+
+  void _initializeProbabilities() {
+    // In a real app, these would come from your model
+    // Here we're simulating based on the confidence score
+    final double confidence = widget.prediction['confidenceScore'] ?? 0.75;
+
+    if (widget.prediction['text'] == "Consumable") {
+      _classProbabilities = {
+        "Consumable": confidence,
+        "Consumable with Caution": (1.0 - confidence) * 0.8,
+        "Not Consumable": (1.0 - confidence) * 0.2,
+      };
+    } else if (widget.prediction['text'] == "Consumable with Caution" ||
+        widget.prediction['text'] == "Half-consumable") {
+      _classProbabilities = {
+        "Consumable": (1.0 - confidence) * 0.4,
+        "Consumable with Caution": confidence,
+        "Not Consumable": (1.0 - confidence) * 0.6,
+      };
+    } else {
+      _classProbabilities = {
+        "Consumable": (1.0 - confidence) * 0.1,
+        "Consumable with Caution": (1.0 - confidence) * 0.3,
+        "Not Consumable": confidence,
+      };
     }
   }
 
@@ -152,6 +186,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
           unselectedLabelColor: const Color(0xFFF3E5AB).withAlpha(178),
           tabs: const [
             Tab(text: "Overview"),
+            Tab(text: "Breakdown"),
             Tab(text: "Details"),
           ],
         ),
@@ -172,7 +207,9 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
         child: TabBarView(
           controller: _tabController,
           children: [
+            // Image → Result Card → Analysis Summary
             _buildOverviewTab(),
+            _buildBreakdownTab(),
             _buildDetailsTab(),
           ],
         ),
@@ -381,16 +418,26 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
     );
   }
 
-  // New combined Details tab with information from both previous Breakdown and Details tabs
-  Widget _buildDetailsTab() {
+  Widget _buildBreakdownTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image timestamp section
+          // Class Probabilities
+          const Text(
+            "Classification Probability",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3E2C1C),
+              fontFamily: "Garamond",
+            ),
+          ),
+          const SizedBox(height: 12),
           Card(
             color: const Color(0xFFF3E5AB),
+            elevation: 2,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             child: Padding(
@@ -399,49 +446,24 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Image Information",
+                    "Probability of each classification",
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                       fontFamily: "Garamond",
                       color: Color(0xFF3E2C1C),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today,
-                          color: Color(0xFF3E2C1C), size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Analyzed: ${formatDateTime(widget.timestamp)}",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: "Garamond",
-                          color: Color(0xFF3E2C1C),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.image,
-                          color: Color(0xFF3E2C1C), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "File: ${widget.imagePath.split('/').last}",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: "Garamond",
-                            color: Color(0xFF3E2C1C),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
+                  const SizedBox(height: 16),
+                  AnalysisVisualizer.buildClassBar('Consumable',
+                      _classProbabilities['Consumable']!, Colors.green),
+                  const SizedBox(height: 12),
+                  AnalysisVisualizer.buildClassBar(
+                      'Consumable with Caution',
+                      _classProbabilities['Consumable with Caution']!,
+                      Colors.orange),
+                  const SizedBox(height: 12),
+                  AnalysisVisualizer.buildClassBar('Not Consumable',
+                      _classProbabilities['Not Consumable']!, Colors.red),
                 ],
               ),
             ),
@@ -531,6 +553,157 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                     style:
                         const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
                   ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailsTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image timestamp section
+          Card(
+            color: const Color(0xFFF3E5AB),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Image Information",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: "Garamond",
+                      color: Color(0xFF3E2C1C),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today,
+                          color: Color(0xFF3E2C1C), size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Analyzed: ${formatDateTime(widget.timestamp)}",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: "Garamond",
+                          color: Color(0xFF3E2C1C),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.image,
+                          color: Color(0xFF3E2C1C), size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "File: ${widget.imagePath.split('/').last}",
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontFamily: "Garamond",
+                            color: Color(0xFF3E2C1C),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Region of Interest Analysis
+          const Text(
+            "Region of Interest Analysis",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3E2C1C),
+              fontFamily: "Garamond",
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            color: const Color(0xFFF3E5AB),
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var box in _boundingBoxes)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 16,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: box['color'],
+                              shape: BoxShape.rectangle,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "${box['label']} (${(box['confidence'] * 100).toStringAsFixed(0)}% confidence)",
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: "Garamond",
+                                    color: Color(0xFF3E2C1C),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  box['label'].toString().contains("Normal")
+                                      ? "This area shows characteristics of fresh chicken breast tissue with normal coloration and texture."
+                                      : box['label']
+                                              .toString()
+                                              .contains("color")
+                                          ? "This area shows changes in color that could indicate early-stage quality degradation."
+                                          : box['label']
+                                                  .toString()
+                                                  .contains("Texture")
+                                              ? "This area shows abnormal texture that suggests quality degradation."
+                                              : "This area shows characteristics suggesting potential spoilage.",
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: "Garamond",
+                                    color: Color(0xFF3E2C1C),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
