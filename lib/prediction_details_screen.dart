@@ -363,15 +363,46 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  for (var factor in _analysisFactors.entries)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: AnalysisVisualizer.buildFactorBar(
-                        factor.key,
-                        factor.value,
-                        AnalysisVisualizer.getColorFromFactor(factor.value),
-                      ),
-                    ),
+                  // Replace factor bars with simple text display
+                  Table(
+                    columnWidths: const {
+                      0: FlexColumnWidth(1.5),
+                      1: FlexColumnWidth(1),
+                    },
+                    children: _analysisFactors.entries.map((factor) {
+                      return TableRow(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: Text(
+                              "${factor.key}:",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: "Garamond",
+                                fontWeight: FontWeight.bold,
+                                color: AnalysisVisualizer.getColorFromFactor(
+                                    factor.value),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: Text(
+                              "${(factor.value * 100).toStringAsFixed(0)}%",
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: "Garamond",
+                                fontWeight: FontWeight.bold,
+                                color: AnalysisVisualizer.getColorFromFactor(
+                                    factor.value),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
                 ],
               ),
             ),
@@ -471,11 +502,31 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Color Analysis
-                  AnalysisVisualizer.buildFactorBar(
-                      'Color',
-                      _analysisFactors['Color']!,
-                      AnalysisVisualizer.getColorFromFactor(
-                          _analysisFactors['Color']!)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Color:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: AnalysisVisualizer.getColorFromFactor(
+                              _analysisFactors['Color']!),
+                        ),
+                      ),
+                      Text(
+                        '${(_analysisFactors['Color']! * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: AnalysisVisualizer.getColorFromFactor(
+                              _analysisFactors['Color']!),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     AnalysisVisualizer.getFactorDescription(
@@ -487,11 +538,31 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                   const SizedBox(height: 16),
 
                   // Texture Analysis
-                  AnalysisVisualizer.buildFactorBar(
-                      'Texture',
-                      _analysisFactors['Texture']!,
-                      AnalysisVisualizer.getColorFromFactor(
-                          _analysisFactors['Texture']!)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Texture:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: AnalysisVisualizer.getColorFromFactor(
+                              _analysisFactors['Texture']!),
+                        ),
+                      ),
+                      Text(
+                        '${(_analysisFactors['Texture']! * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: AnalysisVisualizer.getColorFromFactor(
+                              _analysisFactors['Texture']!),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     AnalysisVisualizer.getFactorDescription(
@@ -503,11 +574,31 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                   const SizedBox(height: 16),
 
                   // Moisture Analysis
-                  AnalysisVisualizer.buildFactorBar(
-                      'Moisture',
-                      _analysisFactors['Moisture']!,
-                      AnalysisVisualizer.getColorFromFactor(
-                          _analysisFactors['Moisture']!)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Moisture:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: AnalysisVisualizer.getColorFromFactor(
+                              _analysisFactors['Moisture']!),
+                        ),
+                      ),
+                      Text(
+                        '${(_analysisFactors['Moisture']! * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: AnalysisVisualizer.getColorFromFactor(
+                              _analysisFactors['Moisture']!),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     AnalysisVisualizer.getFactorDescription(
@@ -519,11 +610,31 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                   const SizedBox(height: 16),
 
                   // Shape Analysis
-                  AnalysisVisualizer.buildFactorBar(
-                      'Shape',
-                      _analysisFactors['Shape']!,
-                      AnalysisVisualizer.getColorFromFactor(
-                          _analysisFactors['Shape']!)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Shape:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: AnalysisVisualizer.getColorFromFactor(
+                              _analysisFactors['Shape']!),
+                        ),
+                      ),
+                      Text(
+                        '${(_analysisFactors['Shape']! * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: AnalysisVisualizer.getColorFromFactor(
+                              _analysisFactors['Shape']!),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     AnalysisVisualizer.getFactorDescription(

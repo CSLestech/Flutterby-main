@@ -726,17 +726,18 @@ class HomeViewState extends State<HomeView>
     // Start performance monitoring
     await _performanceMonitor.startCpuMonitoring();
     _performanceMonitor.startFrameMonitoring(this);
-
     dev.log("🔍 Starting image classification performance test",
-        name:
-            'PerformanceTest'); // List of possible server addresses to try in order
+        name: 'PerformanceTest');
+
+    // List of possible server addresses to try in order
     final List<String> serverAddresses = [
-      "http://192.168.1.9:5000/predict", // Primary address
-      "http://192.168.31.180:5000/predict", // Alternative address 1
-      "http://172.30.8.13:5000/predict", // Alternative address 2
-      "http://172.31.80.1:5000/predict", // For Android emulator
-      "http://10.0.2.2:5000/predict", // For iOS simulator
-      "http://localhost:5000/predict" // Local development server
+      "http://192.168.1.9:5000/predict", // Local IP - safest option
+      "http://10.0.2.2:5000/predict", // For Android emulator
+      "http://localhost:5000/predict", // Local development server
+      "http://172.30.48.1:5000/predict", // Local loopback address
+      "http://172.19.80.1:5000/predict", // Try common home network IP
+      // Add your computer's actual IP below - find it using 'ipconfig' (Windows) or 'ifconfig' (Mac/Linux)
+      // "http://YOUR.ACTUAL.IP:5000/predict", // YOUR COMPUTER'S ACTUAL IP
     ];
 
     Exception? lastException;
@@ -972,10 +973,28 @@ class HomeViewState extends State<HomeView>
     }
 
     if (!mounted) return;
-    _showErrorDialog(
-        'Unable to connect to the server. Please verify your server is running and check your network connection.\n\n'
-        'Technical details: ${lastException.toString()}',
-        title: 'Connection Error');
+
+    // Show a more user-friendly error message with network debugging info
+    if (lastException != null) {
+      String errorDetails = lastException.toString();
+
+      // Check if we're likely dealing with a firewall issue
+      if (errorDetails.contains("SocketException") ||
+          errorDetails.contains("Connection refused")) {
+        _showNetworkTroubleshootingDialog(
+            'Unable to connect to the server. This may be due to a network or firewall issue.',
+            serverAddresses: serverAddresses);
+      } else {
+        _showErrorDialog(
+            'Unable to connect to the server. Please verify your server is running and check your network connection.\n\n'
+            'Technical details: $errorDetails',
+            title: 'Connection Error');
+      }
+    } else {
+      _showErrorDialog(
+          'Unable to connect to the server. Please verify your server is running and check your network connection.',
+          title: 'Connection Error');
+    }
   }
 
   // Helper method to safely extract double values from any data type
@@ -1022,6 +1041,127 @@ class HomeViewState extends State<HomeView>
             color: Color(0xFF3E2C1C),
             fontFamily: "Garamond",
             fontSize: 16,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'OK',
+              style: TextStyle(
+                color: Color(0xFF3E2C1C),
+                fontFamily: "Garamond",
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showNetworkTroubleshootingDialog(String message,
+      {List<String>? serverAddresses}) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFF3E5AB),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          "Network Troubleshooting",
+          style: TextStyle(
+            color: Color(0xFF3E2C1C),
+            fontFamily: "Garamond",
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                message,
+                style: const TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                "Troubleshooting steps:",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "1. Ensure your phone and server are on the same WiFi network",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                "2. Check that your server is running (you should see output in the Python console)",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                "3. Try temporarily disabling your firewall",
+                style: TextStyle(
+                  color: Color(0xFF3E2C1C),
+                  fontFamily: "Garamond",
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (serverAddresses != null && serverAddresses.isNotEmpty) ...[
+                const Text(
+                  "Server addresses attempted:",
+                  style: TextStyle(
+                    color: Color(0xFF3E2C1C),
+                    fontFamily: "Garamond",
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: const Color(0xFF3E2C1C).withAlpha(77)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: serverAddresses
+                        .map((address) => Text(
+                              address,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontFamily: "monospace",
+                                color: Color(0xFF3E2C1C),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
         actions: [
