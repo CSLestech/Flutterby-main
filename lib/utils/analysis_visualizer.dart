@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 class AnalysisVisualizer {
   /// Returns a color based on the factor value (0.0-1.0)
   static Color getColorFromFactor(double factor) {
-    if (factor > 0.85) return Colors.green;
-    if (factor > 0.7) return Colors.lightGreen;
-    if (factor > 0.5) return Colors.orange;
-    return Colors.red;
+    if (factor >= 0.8) {
+      return Colors.green;
+    } else if (factor >= 0.6) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
+    }
   }
 
   /// Builds a horizontal factor bar with label and percentage
@@ -88,75 +91,77 @@ class AnalysisVisualizer {
   }
 
   /// Returns a text description for a factor based on quality level
-  static String getFactorDescription(String factor, String predictionClass) {
-    // Return tailored descriptions based on the factor and prediction class
-    if (factor == 'Color') {
-      if (predictionClass == 'Consumable') {
-        return "The chicken breast shows typical pale pink coloration with minimal discoloration, indicating freshness. This assessment is based on established USDA visual inspection guidelines for fresh poultry.";
-      } else if (predictionClass == 'Consumable with Caution' ||
-          predictionClass == 'Half-consumable') {
+  static String getFactorDescription(String factorName, String predictionType) {
+    // Return different descriptions based on the factor and prediction type
+    if (factorName == "Color") {
+      if (predictionType == "Consumable") {
+        return "The chicken breast shows normal coloration throughout most areas with minimal discoloration that is within acceptable limits for fresh poultry.";
+      } else if (predictionType == "Consumable with Caution" ||
+          predictionType == "Half-consumable") {
         return "The chicken breast shows some minor discoloration in certain areas. While not severe, this indicates the beginning of quality degradation. This aligns with FSIS guidelines on color changes in poultry at the transitional stage.";
       } else {
-        return "The chicken breast shows significant discoloration (grayish or greenish tints), indicating bacterial growth and spoilage. This matches documented spoilage patterns in scientific literature on poultry deterioration.";
+        return "Significant discoloration detected throughout the chicken breast. The color variations indicate possible spoilage and exceed acceptable thresholds according to food safety guidelines.";
       }
-    } else if (factor == 'Texture') {
-      if (predictionClass == 'Consumable') {
-        return "The texture appears firm and springy with good elasticity - typical of fresh poultry muscle tissue. This assessment follows standard food safety inspection criteria for meat texture evaluation.";
-      } else if (predictionClass == 'Consumable with Caution' ||
-          predictionClass == 'Half-consumable') {
+    } else if (factorName == "Texture") {
+      if (predictionType == "Consumable") {
+        return "The texture appears firm and smooth, consistent with fresh chicken breast. No sliminess or concerning textural issues detected.";
+      } else if (predictionType == "Consumable with Caution" ||
+          predictionType == "Half-consumable") {
         return "The texture shows some changes in consistency, with slight softening in certain areas. This suggests early stage quality degradation, consistent with scientific observations of protein breakdown in aging poultry.";
       } else {
-        return "The texture shows significant sliminess or stickiness, indicating advanced bacterial action and protein breakdown. This matches documented characteristics of spoiled poultry in food safety literature.";
+        return "Abnormal texture detected with significant changes from fresh chicken. The surface shows signs of deterioration and possible bacterial growth that affects the structural integrity.";
       }
-    } else if (factor == 'Moisture') {
-      if (predictionClass == 'Consumable') {
-        return "The chicken breast shows appropriate moisture levels, neither excessively dry nor wet. This assessment follows standard moisture content guidelines for fresh poultry established by food regulatory bodies.";
-      } else if (predictionClass == 'Consumable with Caution' ||
-          predictionClass == 'Half-consumable') {
+    } else if (factorName == "Moisture") {
+      if (predictionType == "Consumable") {
+        return "The moisture level appears normal, consistent with properly stored fresh chicken. No excessive dryness or wetness detected.";
+      } else if (predictionType == "Consumable with Caution" ||
+          predictionType == "Half-consumable") {
         return "Some areas show changes in moisture level, either with excess liquid or slight drying. This indicates storage time affecting quality, consistent with documented studies on moisture changes during refrigerated storage of poultry.";
       } else {
-        return "Significant abnormal moisture content detected - either excess surface wetness indicating purge or excessive dryness. This matches documented indicators of spoilage in food safety inspection protocols.";
+        return "Concerning moisture abnormalities detected. Either excessive surface moisture indicating bacterial activity or extreme dryness suggesting improper storage. Both conditions exceed safety thresholds.";
       }
-    } else if (factor == 'Shape') {
-      if (predictionClass == 'Consumable') {
-        return "The chicken breast maintains its typical anatomical shape and structure, with muscle fibers intact. This is consistent with quality indicators for fresh poultry as outlined in food industry quality assessment standards.";
-      } else if (predictionClass == 'Consumable with Caution' ||
-          predictionClass == 'Half-consumable') {
-        return "Minor changes to the typical shape characteristics, with some deformation of the normal muscle structure. This reflects early protein breakdown documented in food science literature on poultry aging.";
+    } else if (factorName == "Shape") {
+      if (predictionType == "Consumable") {
+        return "The shape and structural integrity of the chicken breast appear normal. No concerning deformations or structural breakdown detected.";
+      } else if (predictionType == "Consumable with Caution" ||
+          predictionType == "Half-consumable") {
+        return "Minor changes in the structural integrity observed, though the overall shape remains acceptable. Some fiber breakdown may be beginning in isolated areas.";
       } else {
-        return "Significant loss of structural integrity and abnormal shape characteristics, indicating advanced degradation. This is consistent with documented physical changes in spoiled poultry tissue.";
+        return "Significant structural deterioration observed. The muscle fibers show breakdown and the overall shape integrity is compromised beyond acceptable limits for consumption.";
       }
     }
-    return "Analysis information not available for this factor.";
+
+    // Default description if factor is not recognized
+    return "Analysis not available for this factor.";
   }
 
   /// Gets a recommendation based on quality classification
-  static Map<String, dynamic> getRecommendation(String quality) {
-    switch (quality) {
-      case 'Consumable':
-        return {
-          'title': 'Recommendation: Safe to Consume',
-          'text':
-              'This chicken breast appears fresh and suitable for all cooking methods. Always ensure chicken reaches an internal temperature of 165°F (74°C) when cooking.',
-          'color': Colors.green.shade800,
-          'bgColor': Colors.green.shade100,
-        };
-      case 'Consumable with Caution':
-        return {
-          'title': 'Recommendation: Cook Thoroughly',
-          'text':
-              'This chicken breast is at the transition stage. Cook thoroughly to an internal temperature of 165°F (74°C) and consume immediately. Avoid raw preparations.',
-          'color': Colors.orange.shade800,
-          'bgColor': Colors.orange.shade100,
-        };
-      default:
-        return {
-          'title': 'Recommendation: Discard',
-          'text':
-              'This chicken breast shows significant signs of spoilage and should be discarded. Consuming this may pose health risks.',
-          'color': Colors.red.shade800,
-          'bgColor': Colors.red.shade100,
-        };
+  static Map<String, dynamic> getRecommendation(String predictionType) {
+    if (predictionType == "Consumable") {
+      return {
+        "title": "Safe to Consume",
+        "text":
+            "This chicken breast appears fresh and safe to eat. Ensure proper cooking to at least 165°F (74°C) internal temperature for best safety.",
+        "color": Colors.green,
+        "bgColor": Colors.green.withOpacity(0.1),
+      };
+    } else if (predictionType == "Consumable with Caution" ||
+        predictionType == "Half-consumable") {
+      return {
+        "title": "Exercise Caution",
+        "text":
+            "This chicken is showing early signs of quality degradation. If used, ensure thorough cooking to at least 165°F (74°C) and consume immediately.",
+        "color": Colors.orange,
+        "bgColor": Colors.orange.withOpacity(0.1),
+      };
+    } else {
+      return {
+        "title": "Not Recommended for Consumption",
+        "text":
+            "This chicken shows significant signs of spoilage. Consuming it may pose health risks, even with thorough cooking.",
+        "color": Colors.red,
+        "bgColor": Colors.red.withOpacity(0.1),
+      };
     }
   }
 }

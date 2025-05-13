@@ -67,21 +67,23 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
     // Create more precise bounding boxes based on prediction type
     final String predictionType = widget.prediction['text'];
 
+    // These coordinates are calibrated to stay within the visible chicken breast image
+    // Center coordinates for the chicken image
     if (predictionType == "Consumable") {
       _boundingBoxes = [
         {
           "label": "Normal tissue",
-          "confidence": 0.92, // Increased confidence for clear classification
+          "confidence": 0.92,
           "color": Colors.green,
-          "rect":
-              const Rect.fromLTWH(52, 140, 80, 60), // More precise positioning
+          "rect": const Rect.fromLTWH(
+              100, 150, 60, 50), // Left side of chicken breast
         },
         {
           "label": "Slight discolor",
           "confidence": 0.71,
           "color": Colors.orange,
-          "rect": const Rect.fromLTWH(
-              175, 120, 90, 70), // Adjusted to match visible discoloration
+          "rect":
+              const Rect.fromLTWH(180, 130, 60, 50), // Right side discoloration
         },
       ];
     } else if (predictionType == "Consumable with Caution" ||
@@ -91,32 +93,28 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
           "label": "Normal tissue",
           "confidence": 0.75,
           "color": Colors.green,
-          "rect": const Rect.fromLTWH(
-              52, 140, 80, 60), // Matched to consumable normal tissue
+          "rect": const Rect.fromLTWH(100, 150, 60, 50), // Left side of chicken
         },
         {
           "label": "Discoloration",
-          "confidence": 0.78, // Balanced confidence (70-80 range)
+          "confidence": 0.78,
           "color": Colors.orange,
-          "rect": const Rect.fromLTWH(
-              175, 120, 90, 70), // Matched to same region as consumable
+          "rect": const Rect.fromLTWH(180, 130, 60, 50), // Right side area
         },
       ];
     } else {
       _boundingBoxes = [
         {
           "label": "Spoilage",
-          "confidence": 0.93, // Increased confidence for clear classification
+          "confidence": 0.93,
           "color": Colors.red,
-          "rect": const Rect.fromLTWH(
-              175, 120, 90, 70), // Same region as discoloration in other states
+          "rect": const Rect.fromLTWH(180, 130, 60, 50), // Right side area
         },
         {
           "label": "Texture issue",
-          "confidence": 0.91, // Increased confidence
+          "confidence": 0.91,
           "color": Colors.red,
-          "rect": const Rect.fromLTWH(
-              52, 140, 80, 60), // Same region as normal tissue in other states
+          "rect": const Rect.fromLTWH(100, 150, 60, 50), // Left side area
         },
       ];
     }

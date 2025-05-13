@@ -966,8 +966,8 @@ class HomeViewState extends State<HomeView>
           // Handle 400 Bad Request - Likely not a chicken breast image
           if (!mounted) return;
           _showErrorDialog(
-              'Unable to analyze this image. Please ensure you are uploading a clear image of chicken breast.',
-              title: 'Analysis Failed');
+              'Please capture or upload a clear image of chicken breast.',
+              title: 'Invalid Input');
           return;
         } else if (response.statusCode == 500) {
           // Handle 500 Internal Server Error
