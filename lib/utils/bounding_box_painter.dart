@@ -19,7 +19,8 @@ class BoundingBoxPainter extends CustomPainter {
       final rect = box['rect'] as Rect;
       final color = box['color'] as Color;
       final label = box['label'] as String;
-      final confidence = box['confidence'] as double;
+      // Not using confidence value anymore since percentage display was removed
+      // final confidence = box['confidence'] as double;
 
       // Adjust rect if imageSize and containerSize are provided
       Rect adjustedRect = rect;
@@ -58,11 +59,8 @@ class BoundingBoxPainter extends CustomPainter {
         color: Colors.white,
         fontWeight: FontWeight.bold,
         fontSize: 12,
-      );
-
-      // Prepare text painter for the label
-      final labelSpan = TextSpan(
-          text: "$label (${(confidence * 100).round()}%)", style: textStyle);
+      ); // Prepare text painter for the label - removed percentage
+      final labelSpan = TextSpan(text: label, style: textStyle);
       final labelPainter = TextPainter(
         text: labelSpan,
         textDirection: TextDirection.ltr,

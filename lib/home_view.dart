@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
 import 'dart:convert';
 import 'dart:developer';
@@ -43,6 +45,7 @@ class HoverableCard extends StatefulWidget {
   final String tooltip;
   final IconData icon;
   final VoidCallback onTap;
+  final String? imagePath; // Add optional image path parameter
 
   const HoverableCard({
     super.key,
@@ -51,6 +54,7 @@ class HoverableCard extends StatefulWidget {
     required this.tooltip,
     required this.icon,
     required this.onTap,
+    this.imagePath, // Make it optional
   });
 
   @override
@@ -84,6 +88,7 @@ class _HoverableCardState extends State<HoverableCard> {
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
           width: 250,
+          height: 300, // Set a fixed height for the card
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: isHovering
@@ -145,7 +150,33 @@ class _HoverableCardState extends State<HoverableCard> {
                       color: Color(0xFF3E2C1C),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 12),
+                  if (widget.imagePath != null)
+                    Expanded(
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: Image.asset(
+                            widget.imagePath!,
+                            fit: BoxFit.contain,
+                            width:
+                                double.infinity, // Use full width of container
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: const Color(0xFFEADFBF),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: Color(0xFF3E2C1C),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     height: isHovering ? 24 : 20,
@@ -1448,7 +1479,8 @@ class HomeViewState extends State<HomeView>
             "Classify chicken breast as consumable, half-consumable, or not consumable.",
         "tooltip":
             "Scan chicken breast to determine freshness and quality level",
-        "icon": Icons.check_circle_outline,
+        "icon": Icons.camera_alt,
+        "imagePath": "images/ui/chickanalysis.png",
         "action": () =>
             _showImageSourceDialog(), // Navigate to camera/gallery selection
       },
@@ -1457,6 +1489,7 @@ class HomeViewState extends State<HomeView>
         "description": "Keep track of your previous uploads and predictions.",
         "tooltip": "View your past scans and analysis results",
         "icon": Icons.history,
+        "imagePath": "images/ui/historytracking.jpg",
         "action": () => navigateToTab(1), // Navigate to History tab
       },
       {
@@ -1464,6 +1497,7 @@ class HomeViewState extends State<HomeView>
         "description": "Simple and intuitive interface for easy navigation.",
         "tooltip": "Access our comprehensive user guide for app instructions",
         "icon": Icons.menu_book,
+        "imagePath": "images/ui/userfriendly.jpg",
         "action": () {
           // Open GuideBook modal
           showDialog(
@@ -1479,6 +1513,7 @@ class HomeViewState extends State<HomeView>
         "description": "Get predictions in seconds with high accuracy.",
         "tooltip": "View detailed results of your latest scan",
         "icon": Icons.speed,
+        "imagePath": "images/ui/fastprocessing.jpg",
         "action": () {
           // If there's at least one item in history, navigate to the latest prediction details
           if (_history.isNotEmpty) {
@@ -1557,9 +1592,8 @@ class HomeViewState extends State<HomeView>
         },
       },
     ];
-
     return SizedBox(
-      height: 190,
+      height: 350, // Increase height to accommodate images
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: features.length,
@@ -1572,6 +1606,7 @@ class HomeViewState extends State<HomeView>
               description: feature["description"],
               tooltip: feature["tooltip"],
               icon: feature["icon"],
+              imagePath: feature["imagePath"],
               onTap: feature["action"],
             ),
           );

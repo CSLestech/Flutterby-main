@@ -315,9 +315,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
             ),
           ),
 
-          const SizedBox(height: 24),
-
-          // 4. Analysis Breakdown section
+          const SizedBox(height: 24), // 4. Analysis Breakdown section
           const Text(
             "Analysis Breakdown",
             style: TextStyle(
@@ -442,49 +440,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                 ],
               ),
             ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 5. Recommendation section
-          Builder(
-            builder: (context) {
-              final recommendation = AnalysisVisualizer.getRecommendation(
-                  widget.prediction['text']);
-              return Card(
-                color: recommendation['bgColor'],
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        recommendation['title'],
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: "Garamond",
-                          color: recommendation['color'],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        recommendation['text'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: "Garamond",
-                          color: Color(0xFF3E2C1C),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+          ), // Recommendation section removed
         ],
       ),
     );

@@ -75,6 +75,12 @@ flutter:
     - images/ui/sample.jpg
     - images/ui/chick2.png
     - images/ui/chickog.png
+    
+   # Flash Card images
+    - images/ui/chickanalysis.png
+    - images/ui/historytracking.jpg
+    - images/ui/userfriendly.jpg
+    - images/ui/historytracking.jpg
 
      #  Icons images
     - images/devs/nigg.jpg
