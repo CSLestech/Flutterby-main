@@ -105,7 +105,7 @@ class AboutPage extends StatelessWidget {
                     ),
                     const Center(
                       child: Text(
-                        "Version 1.0.0", // App version number
+                        "Version 2.0.0", // Updated app version number
                         style: TextStyle(
                           fontSize: 16, // Medium text size
                           fontStyle: FontStyle.italic, // Italic style
@@ -198,7 +198,7 @@ class AboutPage extends StatelessWidget {
                         imagePath: "images/devs/Oropesa.png"),
                     _buildDeveloperProfile(
                         name: "Melissa Dollano",
-                        role: "UI/UX Designer",
+                        role: "Data Manager",
                         imagePath: "images/dollano.jpg"),
                     const SizedBox(height: 3), // Add small vertical spacing
 

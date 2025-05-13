@@ -60,7 +60,8 @@ class HistoryPage extends StatelessWidget {
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       fontFamily: "Garamond",
-                      color: Colors.white,
+                      color: Color.fromARGB(255, 255, 242,
+                          185), // Light cream color for better visibility
                     ),
                   ),
                 )

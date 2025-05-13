@@ -250,18 +250,31 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
               ),
-            ),
-
-          // App version text in bottom right corner
-          const Positioned(
+            ), // App version text in bottom right corner with enhanced styling
+          Positioned(
             bottom: 10, // Position from bottom
             right: 10, // Position from right
-            child: Text(
-              "v1.0.0", // Version number text
-              style: TextStyle(
-                color: Color.fromARGB(
-                    179, 186, 174, 0), // Semi-transparent gold color
-                fontSize: 12, // Small text size
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                "v2.0.0", // Updated version number text
+                style: TextStyle(
+                  color: Color.fromARGB(
+                      255, 255, 241, 198), // Cream color for better visibility
+                  fontSize: 12, // Small text size
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black26,
+                      blurRadius: 2,
+                      offset: Offset(1, 1),
+                    )
+                  ],
+                ),
               ),
             ),
           ),
