@@ -131,6 +131,36 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
     return monthNames[month - 1];
   }
 
+  // Helper method to convert numeric scores to descriptive text
+  String _getAssessmentText(String factor, double score) {
+    if (factor == 'Color') {
+      if (score > 0.9) return "Excellent";
+      if (score > 0.8) return "Good";
+      if (score > 0.7) return "Satisfactory";
+      if (score > 0.6) return "Fair";
+      return "Poor";
+    } else if (factor == 'Texture') {
+      if (score > 0.9) return "Optimal";
+      if (score > 0.8) return "Good";
+      if (score > 0.7) return "Acceptable";
+      if (score > 0.6) return "Compromised";
+      return "Poor";
+    } else if (factor == 'Moisture') {
+      if (score > 0.9) return "Ideal";
+      if (score > 0.8) return "Good";
+      if (score > 0.7) return "Acceptable";
+      if (score > 0.6) return "Suboptimal";
+      return "Inadequate";
+    } else if (factor == 'Shape') {
+      if (score > 0.9) return "Excellent";
+      if (score > 0.8) return "Good";
+      if (score > 0.7) return "Satisfactory";
+      if (score > 0.6) return "Slightly Altered";
+      return "Deformed";
+    }
+    return "Undetermined";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -364,17 +394,14 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                   ),
                   const SizedBox(height: 8),
                   // Replace factor bars with simple text display
-                  Table(
-                    columnWidths: const {
-                      0: FlexColumnWidth(1.5),
-                      1: FlexColumnWidth(1),
-                    },
+                  Column(
                     children: _analysisFactors.entries.map((factor) {
-                      return TableRow(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Text(
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
                               "${factor.key}:",
                               style: TextStyle(
                                 fontSize: 16,
@@ -384,12 +411,8 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                                     factor.value),
                               ),
                             ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Text(
-                              "${(factor.value * 100).toStringAsFixed(0)}%",
-                              textAlign: TextAlign.right,
+                            Text(
+                              _getAssessmentText(factor.key, factor.value),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontFamily: "Garamond",
@@ -398,8 +421,8 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                                     factor.value),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       );
                     }).toList(),
                   ),
@@ -516,7 +539,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         ),
                       ),
                       Text(
-                        '${(_analysisFactors['Color']! * 100).toStringAsFixed(0)}%',
+                        _getAssessmentText('Color', _analysisFactors['Color']!),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -535,9 +558,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // Texture Analysis
+                  const SizedBox(height: 16), // Texture Analysis
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -552,7 +573,8 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         ),
                       ),
                       Text(
-                        '${(_analysisFactors['Texture']! * 100).toStringAsFixed(0)}%',
+                        _getAssessmentText(
+                            'Texture', _analysisFactors['Texture']!),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -571,9 +593,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // Moisture Analysis
+                  const SizedBox(height: 16), // Moisture Analysis
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -588,7 +608,8 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         ),
                       ),
                       Text(
-                        '${(_analysisFactors['Moisture']! * 100).toStringAsFixed(0)}%',
+                        _getAssessmentText(
+                            'Moisture', _analysisFactors['Moisture']!),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -607,9 +628,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // Shape Analysis
+                  const SizedBox(height: 16), // Shape Analysis
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -624,7 +643,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         ),
                       ),
                       Text(
-                        '${(_analysisFactors['Shape']! * 100).toStringAsFixed(0)}%',
+                        _getAssessmentText('Shape', _analysisFactors['Shape']!),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
