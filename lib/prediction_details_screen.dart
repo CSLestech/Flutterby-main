@@ -35,7 +35,6 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
   };
   // Mock bounding box regions - in a real app, these would come from your model
   late List<Map<String, dynamic>> _boundingBoxes;
-
   @override
   void initState() {
     super.initState();
@@ -43,25 +42,46 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
 
     // Initialize bounding boxes - in a real app would come from model
     _initializeBoundingBoxes();
+
+    // Adjust confidence scores based on prediction type
+    if (widget.prediction.containsKey('confidenceScore')) {
+      final String predictionType = widget.prediction['text'];
+      double baseScore = widget.prediction['confidenceScore'];
+
+      // Adjust confidence scores - boost clear categories, keep caution moderate
+      if (predictionType == "Consumable") {
+        widget.prediction['confidenceScore'] =
+            baseScore < 0.9 ? baseScore + 0.08 : baseScore;
+      } else if (predictionType == "Not Consumable") {
+        widget.prediction['confidenceScore'] =
+            baseScore < 0.9 ? baseScore + 0.07 : baseScore;
+      } else {
+        // Keep "Consumable with Caution" in the 70-80% range
+        widget.prediction['confidenceScore'] =
+            baseScore > 0.8 ? 0.78 : (baseScore < 0.70 ? 0.72 : baseScore);
+      }
+    }
   }
 
   void _initializeBoundingBoxes() {
-    // Create mock bounding boxes based on prediction type
+    // Create more precise bounding boxes based on prediction type
     final String predictionType = widget.prediction['text'];
 
     if (predictionType == "Consumable") {
       _boundingBoxes = [
         {
           "label": "Normal tissue",
-          "confidence": 0.95,
+          "confidence": 0.92, // Increased confidence for clear classification
           "color": Colors.green,
-          "rect": const Rect.fromLTWH(50, 100, 100, 70),
+          "rect":
+              const Rect.fromLTWH(52, 140, 80, 60), // More precise positioning
         },
         {
           "label": "Slight discolor",
-          "confidence": 0.72,
+          "confidence": 0.71,
           "color": Colors.orange,
-          "rect": const Rect.fromLTWH(180, 120, 60, 40),
+          "rect": const Rect.fromLTWH(
+              175, 120, 90, 70), // Adjusted to match visible discoloration
         },
       ];
     } else if (predictionType == "Consumable with Caution" ||
@@ -71,28 +91,32 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
           "label": "Normal tissue",
           "confidence": 0.75,
           "color": Colors.green,
-          "rect": const Rect.fromLTWH(30, 90, 80, 60),
+          "rect": const Rect.fromLTWH(
+              52, 140, 80, 60), // Matched to consumable normal tissue
         },
         {
           "label": "Discoloration",
-          "confidence": 0.85,
+          "confidence": 0.78, // Balanced confidence (70-80 range)
           "color": Colors.orange,
-          "rect": const Rect.fromLTWH(150, 140, 100, 60),
+          "rect": const Rect.fromLTWH(
+              175, 120, 90, 70), // Matched to same region as consumable
         },
       ];
     } else {
       _boundingBoxes = [
         {
           "label": "Spoilage",
-          "confidence": 0.92,
+          "confidence": 0.93, // Increased confidence for clear classification
           "color": Colors.red,
-          "rect": const Rect.fromLTWH(80, 90, 140, 80),
+          "rect": const Rect.fromLTWH(
+              175, 120, 90, 70), // Same region as discoloration in other states
         },
         {
           "label": "Texture issue",
-          "confidence": 0.86,
+          "confidence": 0.91, // Increased confidence
           "color": Colors.red,
-          "rect": const Rect.fromLTWH(40, 180, 90, 50),
+          "rect": const Rect.fromLTWH(
+              52, 140, 80, 60), // Same region as normal tissue in other states
         },
       ];
     }
@@ -131,93 +155,14 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
     return monthNames[month - 1];
   }
 
-  // Helper method to convert numeric scores to descriptive text
-  String _getAssessmentText(String factor, double score) {
-    if (factor == 'Color') {
-      if (score > 0.9) return "Excellent";
-      if (score > 0.8) return "Good";
-      if (score > 0.7) return "Satisfactory";
-      if (score > 0.6) return "Fair";
-      return "Poor";
-    } else if (factor == 'Texture') {
-      if (score > 0.9) return "Optimal";
-      if (score > 0.8) return "Good";
-      if (score > 0.7) return "Acceptable";
-      if (score > 0.6) return "Compromised";
-      return "Poor";
-    } else if (factor == 'Moisture') {
-      if (score > 0.9) return "Ideal";
-      if (score > 0.8) return "Good";
-      if (score > 0.7) return "Acceptable";
-      if (score > 0.6) return "Suboptimal";
-      return "Inadequate";
-    } else if (factor == 'Shape') {
-      if (score > 0.9) return "Excellent";
-      if (score > 0.8) return "Good";
-      if (score > 0.7) return "Satisfactory";
-      if (score > 0.6) return "Slightly Altered";
-      return "Deformed";
-    }
-    return "Undetermined";
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF3E2C1C),
-        foregroundColor: const Color(0xFFF3E5AB),
-        title: const Text(
-          "Analysis Results",
-          style: TextStyle(
-            color: Color(0xFFF3E5AB),
-            fontFamily: "Garamond",
-            fontSize: 22,
-          ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: const Color(0xFFF3E5AB),
-          labelColor: const Color(0xFFF3E5AB),
-          unselectedLabelColor: const Color(0xFFF3E5AB).withAlpha(178),
-          tabs: const [
-            Tab(text: "Overview"),
-            Tab(text: "Details"),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: _shareResults,
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('images/ui/main_bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildOverviewTab(),
-            _buildDetailsTab(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Overview tab: Visual Analysis -> Result Card -> Analysis Summary
-  Widget _buildOverviewTab() {
+  // Combined single view with all important information
+  Widget _buildSingleView() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Visual Analysis section first (same for both layouts)
+          // 1. Visual Analysis section
           const Text(
             "Visual Analysis",
             style: TextStyle(
@@ -263,8 +208,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         );
                       },
                     ),
-                  ),
-                  // Bounding boxes overlay
+                  ), // Bounding boxes overlay with image-relative positioning
                   LayoutBuilder(
                     builder: (context, constraints) {
                       return SizedBox(
@@ -272,8 +216,12 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         width: double.infinity,
                         child: CustomPaint(
                           size: Size(constraints.maxWidth, 300),
-                          painter:
-                              BoundingBoxPainter(boundingBoxes: _boundingBoxes),
+                          painter: BoundingBoxPainter(
+                            boundingBoxes: _boundingBoxes,
+                            imageSize: const Size(
+                                300, 300), // Base size for calculations
+                            containerSize: Size(constraints.maxWidth, 300),
+                          ),
                         ),
                       );
                     },
@@ -283,9 +231,43 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
-          // 2. Result Card second (Option 2)
+          // 2. Image Information
+          Card(
+            color: const Color(0xFFF3E5AB),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today,
+                          color: Color(0xFF3E2C1C), size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Analyzed: ${formatDateTime(widget.timestamp)}",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: "Garamond",
+                          color: Color(0xFF3E2C1C),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(
+                      height: 8), // Removed file naming row as requested
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 3. Result Card
           Card(
             color: const Color(0xFFF3E5AB),
             elevation: 4,
@@ -328,18 +310,6 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                       color: Color(0xFF3E2C1C),
                     ),
                   ),
-                  if (widget.prediction.containsKey('processingTime'))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        "Processing Time: ${(widget.prediction['processingTime'] as double).toStringAsFixed(2)} sec",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: "Garamond",
-                          color: const Color(0xFF3E2C1C).withAlpha(200),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -347,163 +317,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
 
           const SizedBox(height: 24),
 
-          // 3. Analysis Summary last (Option 2)
-          const Text(
-            "Analysis Summary",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF3E2C1C),
-              fontFamily: "Garamond",
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            color: const Color(0xFFF3E5AB),
-            elevation: 2,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.prediction['text'] == "Consumable"
-                        ? "This chicken breast appears fresh and safe for consumption."
-                        : widget.prediction['text'] ==
-                                    "Consumable with Caution" ||
-                                widget.prediction['text'] == "Half-consumable"
-                            ? "This chicken breast is at the transition stage. Cook thoroughly and consume soon."
-                            : "This chicken breast shows signs of spoilage and is not recommended for consumption.",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontFamily: "Garamond",
-                      color: Color(0xFF3E2C1C),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Key Factors:",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: "Garamond",
-                      color: Color(0xFF3E2C1C),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Replace factor bars with simple text display
-                  Column(
-                    children: _analysisFactors.entries.map((factor) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "${factor.key}:",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: "Garamond",
-                                fontWeight: FontWeight.bold,
-                                color: AnalysisVisualizer.getColorFromFactor(
-                                    factor.value),
-                              ),
-                            ),
-                            Text(
-                              _getAssessmentText(factor.key, factor.value),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: "Garamond",
-                                fontWeight: FontWeight.bold,
-                                color: AnalysisVisualizer.getColorFromFactor(
-                                    factor.value),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // New combined Details tab with information from both previous Breakdown and Details tabs
-  Widget _buildDetailsTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image timestamp section
-          Card(
-            color: const Color(0xFFF3E5AB),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Image Information",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: "Garamond",
-                      color: Color(0xFF3E2C1C),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today,
-                          color: Color(0xFF3E2C1C), size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Analyzed: ${formatDateTime(widget.timestamp)}",
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontFamily: "Garamond",
-                          color: Color(0xFF3E2C1C),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.image,
-                          color: Color(0xFF3E2C1C), size: 18),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "File: ${widget.imagePath.split('/').last}",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontFamily: "Garamond",
-                            color: Color(0xFF3E2C1C),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Feature Importance
+          // 4. Analysis Breakdown section
           const Text(
             "Analysis Breakdown",
             style: TextStyle(
@@ -526,20 +340,10 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                 children: [
                   // Color Analysis
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Text(
                         'Color:',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: "Garamond",
-                          color: AnalysisVisualizer.getColorFromFactor(
-                              _analysisFactors['Color']!),
-                        ),
-                      ),
-                      Text(
-                        _getAssessmentText('Color', _analysisFactors['Color']!),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -558,23 +362,14 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
                   ),
 
-                  const SizedBox(height: 16), // Texture Analysis
+                  const SizedBox(height: 16),
+
+                  // Texture Analysis
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Text(
                         'Texture:',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: "Garamond",
-                          color: AnalysisVisualizer.getColorFromFactor(
-                              _analysisFactors['Texture']!),
-                        ),
-                      ),
-                      Text(
-                        _getAssessmentText(
-                            'Texture', _analysisFactors['Texture']!),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -593,23 +388,14 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
                   ),
 
-                  const SizedBox(height: 16), // Moisture Analysis
+                  const SizedBox(height: 16),
+
+                  // Moisture Analysis
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Text(
                         'Moisture:',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: "Garamond",
-                          color: AnalysisVisualizer.getColorFromFactor(
-                              _analysisFactors['Moisture']!),
-                        ),
-                      ),
-                      Text(
-                        _getAssessmentText(
-                            'Moisture', _analysisFactors['Moisture']!),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -628,22 +414,14 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
                   ),
 
-                  const SizedBox(height: 16), // Shape Analysis
+                  const SizedBox(height: 16),
+
+                  // Shape Analysis
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Text(
                         'Shape:',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: "Garamond",
-                          color: AnalysisVisualizer.getColorFromFactor(
-                              _analysisFactors['Shape']!),
-                        ),
-                      ),
-                      Text(
-                        _getAssessmentText('Shape', _analysisFactors['Shape']!),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -668,7 +446,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
 
           const SizedBox(height: 24),
 
-          // Recommendation
+          // 5. Recommendation section
           Builder(
             builder: (context) {
               final recommendation = AnalysisVisualizer.getRecommendation(
@@ -708,6 +486,39 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
             },
           ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF3E2C1C),
+        foregroundColor: const Color(0xFFF3E5AB),
+        title: const Text(
+          "Analysis Results",
+          style: TextStyle(
+            color: Color(0xFFF3E5AB),
+            fontFamily: "Garamond",
+            fontSize: 22,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: _shareResults,
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('images/ui/main_bg.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: _buildSingleView(),
       ),
     );
   }
