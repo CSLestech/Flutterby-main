@@ -143,7 +143,8 @@ class AnalysisVisualizer {
         "text":
             "This chicken breast appears fresh and safe to eat. Ensure proper cooking to at least 165°F (74°C) internal temperature for best safety.",
         "color": Colors.green,
-        "bgColor": Colors.green.withOpacity(0.1),
+        "bgColor": Colors.green
+            .withAlpha(26), // 0.1 opacity is approximately 26 as alpha
       };
     } else if (predictionType == "Consumable with Caution" ||
         predictionType == "Half-consumable") {
@@ -152,7 +153,8 @@ class AnalysisVisualizer {
         "text":
             "This chicken is showing early signs of quality degradation. If used, ensure thorough cooking to at least 165°F (74°C) and consume immediately.",
         "color": Colors.orange,
-        "bgColor": Colors.orange.withOpacity(0.1),
+        "bgColor": Colors.orange
+            .withAlpha(26), // 0.1 opacity is approximately 26 as alpha
       };
     } else {
       return {
@@ -160,7 +162,8 @@ class AnalysisVisualizer {
         "text":
             "This chicken shows significant signs of spoilage. Consuming it may pose health risks, even with thorough cooking.",
         "color": Colors.red,
-        "bgColor": Colors.red.withOpacity(0.1),
+        "bgColor": Colors.red
+            .withAlpha(26), // 0.1 opacity is approximately 26 as alpha
       };
     }
   }
