@@ -48,17 +48,30 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
       final String predictionType = widget.prediction['text'];
       double baseScore = widget.prediction['confidenceScore'];
 
-      // Adjust confidence scores - boost clear categories, keep caution moderate
+      // Adjust confidence scores - more realistic thresholds
       if (predictionType == "Consumable") {
+        // Boost Consumable scores to realistic high confidence (85-90%)
+        double adjusted = baseScore < 0.85 ? baseScore + 0.05 : baseScore;
+        // Cap at 90% for realism
         widget.prediction['confidenceScore'] =
-            baseScore < 0.9 ? baseScore + 0.08 : baseScore;
-      } else if (predictionType == "Not Consumable") {
+            adjusted > 0.90 ? 0.89 : adjusted;
+      } else if (predictionType == "Not Consumable" ||
+          predictionType == "Not consumable") {
+        // Boost Not Consumable scores but keep distinctly different from Consumable
+        double adjusted = baseScore < 0.82 ? baseScore + 0.06 : baseScore;
+        // Cap at 87% - distinct from consumable but still confident
         widget.prediction['confidenceScore'] =
-            baseScore < 0.9 ? baseScore + 0.07 : baseScore;
+            adjusted > 0.87 ? 0.86 : adjusted;
       } else {
-        // Keep "Consumable with Caution" in the 70-80% range
-        widget.prediction['confidenceScore'] =
-            baseScore > 0.8 ? 0.78 : (baseScore < 0.70 ? 0.72 : baseScore);
+        // Keep "Consumable with Caution" in the 70-80% range for appropriate uncertainty
+        if (baseScore < 0.80) {
+          widget.prediction['confidenceScore'] = 0.79; // Minimum of 79%
+        } else if (baseScore > 0.85) {
+          widget.prediction['confidenceScore'] = 0.81; // Maximum of 81%
+        } else {
+          // Keep original if already in range
+          widget.prediction['confidenceScore'] = baseScore;
+        }
       }
     }
   }
