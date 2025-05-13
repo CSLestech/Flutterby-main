@@ -137,7 +137,7 @@ class AboutPage extends StatelessWidget {
                     const SizedBox(height: 10), // Add vertical spacing
 
                     const Text(
-                      "Using machine learning technology, the application can analyze images of chicken meat and classify them into three categories: Consumable, Half-consumable, and Not consumable.",
+                      "Using machine learning technology, the application can analyze images of chicken meat and classify them into three categories: Consumable, Consumable with Caution, and Not consumable.",
                       style: TextStyle(
                         fontSize: 16, // Medium text size
                         color: Color(0xFF3E2C1C), // Dark brown text color

@@ -102,53 +102,53 @@ class AnalysisVisualizer {
         if (variation == 0) {
           return "The chicken breast shows normal coloration throughout most areas with minimal discoloration that is within acceptable limits for fresh poultry.";
         } else if (variation == 1) {
-          return "The color profile of this chicken sample appears within normal parameters. Visual assessment shows good uniformity with only minor variations typical of fresh chicken.";
+          return "The color looks good, with a healthy pinkish-white appearance typical of fresh chicken. Any small color variations are normal.";
         } else {
-          return "Visual examination indicates proper coloration consistent with fresh chicken. The minor color variations observed fall within expected ranges for high-quality poultry.";
+          return "The chicken has a nice, even color that looks fresh and healthy. Only minor natural variations in shade are visible.";
         }
       } else if (predictionType == "Consumable with Caution" ||
           predictionType == "Half-consumable") {
         if (variation == 0) {
-          return "The chicken breast appears to have some minor discoloration in certain areas. This visual characteristic often suggests the beginning of quality changes, similar to patterns described in food safety guidelines.";
+          return "The chicken breast appears to have some minor discoloration in certain areas. This visual change often suggests the beginning of quality changes.";
         } else if (variation == 1) {
-          return "Moderate color changes are visible in specific regions of this sample. These visual indicators suggest early-stage quality transitions that warrant attention.";
+          return "Some areas show slight color changes that might mean the chicken is starting to lose freshness. These changes are still within acceptable ranges.";
         } else {
-          return "The coloration shows slight deviations from optimal freshness. The visual assessment reveals some areas with color changes that typically appear during the early stages of quality decline.";
+          return "The color is slightly off in certain spots, which typically happens when chicken has been stored for a while but is still usable.";
         }
       } else {
         if (variation == 0) {
-          return "The visual analysis suggests concerning color variations throughout the chicken breast. These visual patterns are similar to those associated with quality deterioration in poultry.";
+          return "The visual analysis suggests concerning color variations throughout the chicken breast. These patterns typically indicate quality issues.";
         } else if (variation == 1) {
-          return "Significant color abnormalities are visible across the surface of this sample. The visual patterns observed align with characteristics of chicken that has undergone substantial quality changes.";
+          return "The chicken shows obvious discoloration that usually means it's no longer fresh. These color changes suggest it should not be eaten.";
         } else {
-          return "The color profile displays marked variations inconsistent with fresh chicken. Visual assessment identifies widespread discoloration patterns typically associated with quality concerns.";
+          return "There are noticeable color problems across the chicken surface that indicate it's past its prime for safe consumption.";
         }
       }
     } else if (factorName == "Texture") {
       if (predictionType == "Consumable") {
         if (variation == 0) {
-          return "Based on visual assessment, the texture appears consistent with fresh chicken breast. The surface appears smooth and firm in the image.";
+          return "Based on visual assessment, the texture appears consistent with fresh chicken breast. The surface looks smooth and firm in the image.";
         } else if (variation == 1) {
-          return "The visual texture characteristics suggest good fiber integrity and proper moisture retention. The surface appearance is consistent with high-quality fresh chicken.";
+          return "The chicken looks to have a nice, smooth surface with the firmness you'd expect from fresh poultry.";
         } else {
-          return "Surface examination indicates a texture profile that aligns with properly stored fresh chicken. Visual cues suggest appropriate firmness and tissue cohesion.";
+          return "The surface appearance suggests good texture quality, looking smooth and evenly formed like properly fresh chicken should.";
         }
       } else if (predictionType == "Consumable with Caution" ||
           predictionType == "Half-consumable") {
         if (variation == 0) {
           return "The visual appearance suggests possible changes in texture consistency in some areas. These visual cues might indicate early stage quality changes.";
         } else if (variation == 1) {
-          return "Some areas of the sample show visual indicators of textural variations. These characteristics often appear during the transitional phase of poultry quality changes.";
+          return "Some parts of the chicken look slightly different in texture, which often happens when chicken is still okay but not at peak freshness.";
         } else {
-          return "The surface appearance displays subtle textural inconsistencies in specific regions. Visual assessment identifies minor changes typical of chicken in the early stages of quality transition.";
+          return "The surface doesn't look perfectly even throughout - some areas appear to be changing texture, which can happen as chicken begins to age.";
         }
       } else {
         if (variation == 0) {
-          return "The visual characteristics of the surface suggest potential texture issues. The appearance differs from what would typically be expected in fresh chicken.";
+          return "The visual characteristics of the surface suggest texture issues. The appearance differs from what you'd expect in fresh chicken.";
         } else if (variation == 1) {
-          return "Visual examination reveals significant texture abnormalities across the sample. The surface appearance shows characteristics inconsistent with recommended quality standards.";
+          return "The chicken surface looks problematic, with an uneven texture that suggests it's no longer fresh enough for consumption.";
         } else {
-          return "The texture profile visible in the image indicates substantial changes in the muscle fiber integrity. These visual patterns align with advanced quality concerns in poultry.";
+          return "The texture appears abnormal with visible changes that indicate the chicken is likely past its usable state.";
         }
       }
     } else if (factorName == "Moisture") {
@@ -156,53 +156,107 @@ class AnalysisVisualizer {
         if (variation == 0) {
           return "The visual appearance suggests normal moisture characteristics, consistent with properly stored fresh chicken based on visual assessment.";
         } else if (variation == 1) {
-          return "Based on visual cues, the sample appears to have appropriate moisture distribution. The surface reflectivity and tissue appearance align with properly maintained chicken.";
+          return "The chicken looks to have a healthy level of moisture - not too dry and not too wet, as fresh chicken should appear.";
         } else {
-          return "Visual examination indicates suitable moisture characteristics. The surface appearance suggests proper hydration levels typical of fresh, quality poultry.";
+          return "From what we can see, the chicken has a good balance of moisture, appearing neither dried out nor excessively wet.";
         }
       } else if (predictionType == "Consumable with Caution" ||
           predictionType == "Half-consumable") {
         if (variation == 0) {
-          return "The appearance suggests potential moisture-related changes. Visual indicators might point to changes that occur during extended refrigerated storage.";
+          return "The appearance suggests potential moisture-related changes. Visual indicators might point to changes that occur during extended storage.";
         } else if (variation == 1) {
-          return "Some visual cues indicate possible moisture distribution changes. The surface characteristics suggest moderate alterations that may affect overall quality.";
+          return "The chicken shows some signs that its moisture level isn't ideal - either slightly too dry or a bit too moist on the surface.";
         } else {
-          return "Visual assessment notes moderate variations in the apparent moisture characteristics. These visual patterns often emerge during the transitional phase of chicken quality changes.";
+          return "There are visual hints that the moisture balance is starting to change, which typically happens when chicken has been stored for some time.";
         }
       } else {
         if (variation == 0) {
-          return "The visual assessment notes surface appearance that may suggest moisture-related issues. The visual characteristics are consistent with patterns seen in prolonged storage or improper handling.";
+          return "The visual assessment notes surface appearance that may suggest moisture-related issues, similar to patterns seen in improperly stored chicken.";
         } else if (variation == 1) {
-          return "Visual examination indicates significant moisture-related concerns. The surface appearance shows characteristics typically associated with substantial quality deterioration.";
+          return "The chicken appears to have problematic moisture levels - either too dry and tough or showing excess liquid that shouldn't be there.";
         } else {
-          return "The visible surface characteristics suggest problematic moisture conditions. These visual patterns are frequently observed in chicken that has undergone significant quality changes.";
+          return "The visible moisture characteristics don't look right for safe chicken - showing signs typical of chicken that shouldn't be consumed.";
         }
       }
     } else if (factorName == "Shape") {
       if (predictionType == "Consumable") {
         if (variation == 0) {
-          return "The overall shape and appearance of the chicken breast seems normal based on visual assessment. No obvious deformations are visible in the image.";
+          return "The overall shape and appearance of the chicken breast seems normal based on visual assessment. No obvious issues are visible in the image.";
         } else if (variation == 1) {
-          return "Visual examination indicates proper structural integrity throughout the sample. The form and contours appear consistent with high-quality fresh chicken.";
+          return "The chicken has a natural, well-formed shape that looks as fresh chicken should, with no concerning irregularities.";
         } else {
-          return "The morphological characteristics visible in the image align with normal, fresh chicken parameters. No concerning structural abnormalities are apparent.";
+          return "The chicken piece maintains its proper form and structure, looking like a quality cut of fresh poultry.";
         }
       } else if (predictionType == "Consumable with Caution" ||
           predictionType == "Half-consumable") {
         if (variation == 0) {
           return "Some visual cues suggest minor changes in the structural appearance, though the overall shape remains within expected parameters based on the image.";
         } else if (variation == 1) {
-          return "Visual assessment reveals subtle structural inconsistencies in limited areas. The majority of the sample maintains appropriate form, with only minor deviations.";
+          return "The chicken's shape shows slight irregularities in some areas, which can happen as chicken begins to age but is still usable.";
         } else {
-          return "The image shows moderate shape variations in specific regions. These visual characteristics often indicate early-stage structural changes that merit attention.";
+          return "There are some minor changes to the chicken's form, though it still mostly maintains its proper structure.";
         }
       } else {
         if (variation == 0) {
-          return "The visual assessment indicates potential structural issues. The appearance shows characteristics that differ from typical fresh chicken visual patterns.";
+          return "The visual assessment indicates potential structural issues. The appearance shows characteristics that differ from typical fresh chicken.";
         } else if (variation == 1) {
-          return "Significant structural abnormalities are visible in the sample. The visual patterns suggest substantial changes in muscle fiber integrity and overall form.";
+          return "The chicken's shape looks noticeably altered from what fresh chicken should look like, suggesting it's past its prime.";
         } else {
-          return "The visible morphological characteristics indicate concerning structural alterations. The form and tissue integrity appear markedly different from recommended quality standards.";
+          return "The chicken has lost its proper form in ways that suggest it shouldn't be used, showing signs of breakdown that indicate spoilage.";
+        }
+      }
+    } else if (factorName == "Surface Pattern") {
+      if (predictionType == "Consumable") {
+        if (variation == 0) {
+          return "The chicken shows a uniform surface pattern that's consistent across the entire piece, which is typical of fresh, quality poultry.";
+        } else if (variation == 1) {
+          return "The surface pattern appears even and consistent throughout, displaying the natural grain and texture expected in fresh chicken.";
+        } else {
+          return "Visual assessment shows a well-distributed, regular pattern across the surface, indicating good quality chicken.";
+        }
+      } else if (predictionType == "Consumable with Caution" ||
+          predictionType == "Half-consumable") {
+        if (variation == 0) {
+          return "Some minor inconsistencies are visible in the surface pattern, though most areas still maintain normal appearance.";
+        } else if (variation == 1) {
+          return "The chicken shows slight variations in its surface pattern in certain areas, which can occur as freshness begins to decline.";
+        } else {
+          return "While mostly consistent, there are some areas where the surface pattern shows early signs of change from the ideal uniform appearance.";
+        }
+      } else {
+        if (variation == 0) {
+          return "The surface pattern shows significant irregularities and disruptions that indicate the chicken has undergone notable quality changes.";
+        } else if (variation == 1) {
+          return "Visual examination reveals an uneven, inconsistent surface pattern that differs markedly from what fresh chicken should display.";
+        } else {
+          return "The chicken's surface pattern appears highly irregular with noticeable disruptions, suggesting it's no longer suitable for consumption.";
+        }
+      }
+    } else if (factorName == "Edge Integrity") {
+      if (predictionType == "Consumable") {
+        if (variation == 0) {
+          return "The edges of the chicken piece appear well-defined and firm, maintaining clear boundaries that indicate proper freshness.";
+        } else if (variation == 1) {
+          return "Visual assessment shows good edge definition throughout the chicken, with the clean, distinct borders expected in quality poultry.";
+        } else {
+          return "The chicken maintains proper edge clarity and definition, showing the firm boundaries characteristic of fresh meat.";
+        }
+      } else if (predictionType == "Consumable with Caution" ||
+          predictionType == "Half-consumable") {
+        if (variation == 0) {
+          return "Some edges appear slightly less defined than others, showing early signs of softening that can occur as chicken begins to age.";
+        } else if (variation == 1) {
+          return "The chicken shows minor edge softening in certain areas, though most boundaries remain relatively well-defined.";
+        } else {
+          return "Visual examination indicates some reduction in edge clarity, with slight blurring of boundaries in specific regions.";
+        }
+      } else {
+        if (variation == 0) {
+          return "The chicken's edges appear poorly defined with significant boundary deterioration, suggesting advanced quality decline.";
+        } else if (variation == 1) {
+          return "Visual assessment shows concerning loss of edge definition, with borders that appear too soft and poorly maintained.";
+        } else {
+          return "The edges lack proper definition and clarity, displaying the boundary breakdown typically seen in chicken that shouldn't be consumed.";
         }
       }
     }

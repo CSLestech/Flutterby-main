@@ -26,6 +26,7 @@ class PredictionDetailsScreen extends StatefulWidget {
 class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+
   // Analysis factors with mock values - in a real app, these would come from your model
   final Map<String, double> _analysisFactors = {
     "Color": 0.85,
@@ -33,8 +34,10 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
     "Moisture": 0.68,
     "Shape": 0.92,
   };
+
   // Mock bounding box regions - in a real app, these would come from your model
   late List<Map<String, dynamic>> _boundingBoxes;
+
   @override
   void initState() {
     super.initState();
@@ -219,7 +222,8 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         );
                       },
                     ),
-                  ), // Bounding boxes overlay with image-relative positioning
+                  ),
+                  // Bounding boxes overlay with image-relative positioning
                   LayoutBuilder(
                     builder: (context, constraints) {
                       return SizedBox(
@@ -423,9 +427,7 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                         const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
                   ),
 
-                  const SizedBox(height: 16),
-
-                  // Shape Analysis
+                  const SizedBox(height: 16), // Shape Analysis
                   Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -445,6 +447,57 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                   Text(
                     AnalysisVisualizer.getFactorDescription(
                         'Shape', widget.prediction['text']),
+                    style:
+                        const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Surface Pattern Analysis
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Surface Pattern:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: AnalysisVisualizer.getColorFromFactor(
+                              _analysisFactors['Surface Pattern']!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    AnalysisVisualizer.getFactorDescription(
+                        'Surface Pattern', widget.prediction['text']),
+                    style:
+                        const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Edge Integrity Analysis
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Edge Integrity:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: "Garamond",
+                          color: AnalysisVisualizer.getColorFromFactor(
+                              _analysisFactors['Edge Integrity']!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    AnalysisVisualizer.getFactorDescription(
+                        'Edge Integrity', widget.prediction['text']),
                     style:
                         const TextStyle(fontSize: 14, color: Color(0xFF3E2C1C)),
                   ),

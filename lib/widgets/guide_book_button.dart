@@ -188,31 +188,16 @@ class GuideBookContent {
           },
           {
             'title':
-                'Surface Moisture & Sheen', // New parameter focusing on surface moisture
+                'Moisture Assessment', // Parameter focusing on moisture level
             'description':
                 'Fresh chicken breast typically has a slight natural sheen but isn\'t excessively wet or dry. Consumable chicken has an even, moderate moisture level. Consumable with caution may show uneven moisture patches. Not consumable chicken often appears abnormally wet with a slimy sheen or overly dry with discolored patches. The system can detect these variations in surface reflectivity that indicate moisture levels.',
             'image': 'images/ui/moisture.png',
           },
           {
-            'title':
-                'Edge Integrity Analysis', // New parameter focusing on edge definition
+            'title': 'Shape Analysis', // Parameter focusing on overall shape
             'description':
-                'Edge integrity refers to how well-defined and firm the chicken\'s edges and surface boundaries appear. Consumable chicken maintains distinct, firm edges. Consumable with caution shows softening at some edges. Not consumable chicken displays mushy, degrading edges with poor definition. The system detects these edge characteristics through image processing techniques that measure boundary distinction and consistency.',
+                'Shape analysis examines the overall form and structure of the chicken piece. Fresh chicken maintains its proper form with clear definition. Consumable with caution may show minor changes in shape integrity. Not consumable chicken often has a misshapen appearance with visible breakdown in structure. The system evaluates these shape characteristics to help determine overall quality.',
             'image': 'images/ui/edges.png',
-          },
-          {
-            'title':
-                'Surface Pattern Uniformity', // New parameter focusing on surface consistency
-            'description':
-                'This parameter measures how consistent the chicken\'s surface pattern appears. Fresh, consumable chicken has a relatively uniform surface pattern. Consumable with caution may show minor inconsistencies in pattern. Not consumable chicken displays irregular surface patterns with noticeable disruptions. The system can quantify pattern consistency by analyzing texture variation across different regions of the meat.',
-            'image': 'images/ui/pattern.png',
-          },
-          {
-            'title':
-                'Structural Integrity under Pressure', // Simple mechanical test that can be visually assessed
-            'description':
-                'This parameter examines how the chicken maintains its shape when gentle pressure is applied. Consumable chicken recovers quickly with minimal deformation. Consumable with caution shows slower recovery and moderate deformation. Not consumable chicken remains deformed with poor recovery. The system can measure recovery rate and deformation percentage from sequential images taken during and after pressure application.',
-            'image': 'images/ui/pressure.png',
           },
           {
             'title': 'Experimental Design', // Focus on study methodology

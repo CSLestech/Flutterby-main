@@ -257,7 +257,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withAlpha(
+                    51), // 0.2 opacity = roughly 51 as alpha value (0.2 * 255)
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
