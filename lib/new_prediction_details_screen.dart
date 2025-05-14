@@ -1,8 +1,23 @@
 import 'dart:io';
-
-import 'package:check_a_doodle_doo/utils/analysis_visualizer.dart';
-import 'package:check_a_doodle_doo/utils/bounding_box_painter.dart';
 import 'package:flutter/material.dart';
+import 'package:check_a_doodle_doo/utils/analysis_visualizer.dart';
+
+/// A simple painter that doesn't actually draw bounding boxes
+class NoBoundingBoxPainter extends CustomPainter {
+  final List<Map<String, dynamic>> boundingBoxes;
+
+  NoBoundingBoxPainter({required this.boundingBoxes});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Empty implementation - doesn't draw anything
+  }
+
+  @override
+  bool shouldRepaint(NoBoundingBoxPainter oldDelegate) {
+    return false;
+  }
+}
 
 class NewPredictionDetailsScreen extends StatefulWidget {
   final String imagePath;
@@ -149,18 +164,8 @@ class _NewPredictionDetailsScreenState extends State<NewPredictionDetailsScreen>
   // Helper method to get month name
   String _getMonthName(int month) {
     const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return monthNames[month - 1];
   }
@@ -280,7 +285,7 @@ class _NewPredictionDetailsScreenState extends State<NewPredictionDetailsScreen>
                         child: CustomPaint(
                           size: Size(constraints.maxWidth, 300),
                           painter:
-                              BoundingBoxPainter(boundingBoxes: _boundingBoxes),
+                              NoBoundingBoxPainter(boundingBoxes: _boundingBoxes),
                         ),
                       );
                     },

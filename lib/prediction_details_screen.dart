@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:check_a_doodle_doo/utils/analysis_visualizer.dart';
-import 'package:check_a_doodle_doo/utils/bounding_box_toggler.dart';
 
 class PredictionDetailsScreen extends StatefulWidget {
   final String imagePath;
@@ -25,7 +24,6 @@ class PredictionDetailsScreen extends StatefulWidget {
 class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
   // Analysis factors with mock values - in a real app, these would come from your model
   final Map<String, double> _analysisFactors = {
     "Color": 0.85,
@@ -34,147 +32,16 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
     "Shape": 0.92,
   };
 
-  // Mock bounding box regions - in a real app, these would come from your model
-  late List<Map<String, dynamic>> _boundingBoxes = [];
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-
-    // Initialize bounding boxes - in a real app would come from model
-    _initializeBoundingBoxes();
 
     // Get consistent confidence score using the same mechanism as history page
     if (widget.prediction.containsKey('confidenceScore')) {
       // Simply preserve the confidence score from the widget
       // This ensures consistency between history view and details screen
       // No need to modify the score if it's already set, particularly if coming from history
-    }
-  }
-
-  void _initializeBoundingBoxes() {
-    // Create precise bounding boxes based on prediction type and the actual image
-    final String predictionType = widget.prediction['text'];
-    final String imagePath = widget.imagePath;
-
-    // Get image identifier to create different bounding boxes for different images
-    final String imageId = imagePath.split('/').last.split('\\').last;
-    final String timestamp = widget.timestamp;
-
-    // FOOD SAFETY RESEARCH: Our bounding boxes are based on key indicators identified
-    // by food scientists from the USDA Food Safety and Inspection Service, published in their
-    // Visual Inspection Guidelines for Poultry Products (2021). Additionally, we incorporate
-    // data from Cornell University's Food Spoilage Recognition Database which annotated
-    // 12,000+ chicken images with expert-validated bounding boxes for both normal and
-    // deteriorated tissues.
-    if (predictionType == "Consumable") {
-      if (imageId.contains('May_14_2025_3_43') || timestamp.contains('3:43')) {
-        // Single bounding box for a portion of the chicken breast
-        _boundingBoxes = [
-          {
-            "label": "Normal tissue",
-            "confidence": 0.92,
-            "color": Colors.green,
-            "rect": const Rect.fromLTWH(130, 190, 90,
-                70), // Single box covering middle portion of the chicken
-          },
-        ];
-      } else {
-        // Default bounding box for other consumable chicken images
-        _boundingBoxes = [
-          {
-            "label": "Normal tissue",
-            "confidence": 0.94,
-            "color": Colors.green,
-            "rect": const Rect.fromLTWH(
-                110, 170, 100, 80), // Single box covering central portion
-          },
-        ];
-      }
-    } else if (predictionType == "Consumable with Caution" ||
-        predictionType == "Half-consumable") {
-      if (imageId.contains('caution') || timestamp.contains('caution')) {
-        _boundingBoxes = [
-          {
-            "label": "Caution area",
-            "confidence": 0.82,
-            "color": Colors.orange,
-            "rect": const Rect.fromLTWH(140, 160, 100,
-                70), // Single box covering a portion of the chicken
-          },
-        ];
-      } else {
-        // Default positioning for general caution cases
-        _boundingBoxes = [
-          {
-            "label": "Caution area",
-            "confidence": 0.81,
-            "color": Colors.orange,
-            "rect": const Rect.fromLTWH(130, 170, 90,
-                80), // Single box covering a portion of the chicken
-          },
-        ];
-      }
-    } else {
-      // For Not Consumable - highly specific positioning for known problem images
-      if (imageId.contains('May_14_2025_3_29') ||
-          widget.timestamp.contains('3:29')) {
-        // First image (yellower chicken)
-        _boundingBoxes = [
-          {
-            "label": "Spoilage",
-            "confidence": 0.94,
-            "color": Colors.red,
-            "rect": const Rect.fromLTWH(350, 165, 70,
-                70), // Right side spoilage area - adjusted for visibility
-          },
-          {
-            "label": "Texture issue",
-            "confidence": 0.93,
-            "color": Colors.red,
-            "rect": const Rect.fromLTWH(190, 170, 90,
-                90), // Left-center texture issues - enlarged for visibility
-          },
-        ];
-      } else if (imageId.contains('May_14_2025_3_28') ||
-          widget.timestamp.contains('3:28')) {
-        // Second image (browner chicken)
-        _boundingBoxes = [
-          {
-            "label": "Spoilage",
-            "confidence": 0.95,
-            "color": Colors.red,
-            "rect": const Rect.fromLTWH(350, 170, 80,
-                70), // Right side spoilage - positioned for better visibility
-          },
-          {
-            "label": "Texture issue",
-            "confidence": 0.94,
-            "color": Colors.red,
-            "rect": const Rect.fromLTWH(160, 220, 100,
-                90), // Left side textural degradation - enlarged for better coverage
-          },
-        ];
-      } else {
-        // Default not consumable bounding boxes
-        _boundingBoxes = [
-          {
-            "label": "Spoilage",
-            "confidence": 0.94,
-            "color": Colors.red,
-            "rect":
-                const Rect.fromLTWH(220, 130, 90, 70), // Right side spoilage
-          },
-          {
-            "label": "Texture issue",
-            "confidence": 0.92,
-            "color": Colors.red,
-            "rect": const Rect.fromLTWH(
-                100, 190, 80, 70), // Left side texture degradation
-          },
-        ];
-      }
     }
   }
 
@@ -244,52 +111,32 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                   // This maintains image proportions while keeping size reasonable
                   final double idealHeight = constraints.maxWidth * 0.75;
 
-                  return Stack(
-                    alignment: Alignment.center, // Center the image
-                    children: [
-                      // Image
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.file(
-                          File(widget.imagePath),
-                          fit: BoxFit
-                              .contain, // Changed to contain to show full image
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.file(
+                      File(widget.imagePath),
+                      fit: BoxFit
+                          .contain, // Changed to contain to show full image
+                      height: idealHeight,
+                      width: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
                           height: idealHeight,
                           width: double.infinity,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              height: idealHeight,
-                              width: double.infinity,
-                              color: Colors.grey.shade200,
-                              child: const Center(
-                                child: Text(
-                                  "Image not found or cannot be displayed.\nPlease select a valid image.",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Color(0xFF3E2C1C),
-                                  ),
-                                ),
+                          color: Colors.grey.shade200,
+                          child: const Center(
+                            child: Text(
+                              "Image not found or cannot be displayed.\nPlease select a valid image.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF3E2C1C),
                               ),
-                            );
-                          },
-                        ),
-                      ), // Bounding boxes overlay with image-relative positioning
-                      SizedBox(
-                        height: idealHeight,
-                        width: double.infinity,
-                        child: CustomPaint(
-                          size: Size(constraints.maxWidth, idealHeight),
-                          painter: BoundingBoxToggler().getPainter(
-                            boundingBoxes: _boundingBoxes,
-                            imageSize: const Size(
-                                300, 280), // Base size for calculations
-                            containerSize:
-                                Size(constraints.maxWidth, idealHeight),
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
+                        );
+                      },
+                    ),
                   );
                 },
               ),
@@ -532,15 +379,6 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
           ),
         ),
         actions: [
-          // Toggle bounding box visibility button
-          IconButton(
-            icon: const Icon(Icons.category),
-            tooltip: 'Toggle bounding boxes',
-            onPressed: () {
-              BoundingBoxToggler().toggle();
-              setState(() {}); // Refresh the UI
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: _shareResults,
