@@ -1470,31 +1470,6 @@ class HomeViewState extends State<HomeView>
             ),
             const SizedBox(height: 15),
 
-            // Chicken Classification Guidelines
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Chicken Classification Guidelines",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromARGB(255, 253, 242, 210),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  AnalysisVisualizer.buildEducationalInfoSection(
-                    "",
-                    AnalysisVisualizer.getChickenClassificationInfo(),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
             // Magnolia Chicken Classes
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15.0),
@@ -1502,7 +1477,7 @@ class HomeViewState extends State<HomeView>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Magnolia Chicken Classes",
+                    "Chicken Classes",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
