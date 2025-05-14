@@ -3,6 +3,110 @@ import 'package:flutter/material.dart';
 
 /// Utility class for building visualization components of chicken analysis
 class AnalysisVisualizer {
+  /// Returns consistent confidence scores for specific images
+  static double getConsistentConfidenceScore(String imageId, double baseScore,
+      {bool isHistory = false}) {
+    // Set specific confidence scores for known image IDs
+    if (imageId.contains('May_14_2025_3_43') || imageId.contains('3:43')) {
+      return 0.921; // Consistently high score for consumable chicken
+    } else if (imageId.contains('May_14_2025_3_29') ||
+        imageId.contains('3:29')) {
+      return 0.893; // Consistent score for not consumable (first variant)
+    } else if (imageId.contains('May_14_2025_3_28') ||
+        imageId.contains('3:28')) {
+      return 0.901; // Consistent score for not consumable (second variant)
+    } else if (imageId.contains('caution')) {
+      return 0.831; // Consistent score for caution images
+    }
+
+    // For other images, use the base score but ensure it's within reasonable bounds
+    // More likely to be approximately 0.85 for consumable, 0.83 for caution, 0.89 for not consumable
+    double score = baseScore;
+    if (score < 0.75) score = 0.75;
+    if (score > 0.95) score = 0.95;
+
+    // Return consistent score
+    return score;
+  }
+
+  /// Returns a color based on a factor value (0.0-1.0)
+  static Color getColorFromFactor(double factor) {
+    if (factor >= 0.85) {
+      return Colors.green;
+    } else if (factor >= 0.65) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
+    }
+  }
+
+  /// Returns a description text based on factor type and prediction
+  static String getFactorDescription(String factorType, String prediction,
+      {String? imagePath, String? timestamp}) {
+    // First try to get a dynamic analysis based on the actual image content
+    Map<String, String> dynamicAnalysis =
+        analyzeImageContent(imagePath, timestamp, prediction);
+
+    // If we have a dynamic analysis for this specific factor, use it
+    if (dynamicAnalysis.containsKey(factorType)) {
+      return dynamicAnalysis[factorType]!;
+    }
+
+    // Default descriptions based on factor type and prediction
+    switch (factorType) {
+      case 'Color':
+        if (prediction.contains('Consumable') &&
+            !prediction.contains('Not') &&
+            !prediction.contains('Caution')) {
+          return 'Fresh pink-beige appearance with uniform coloration throughout, no signs of discoloration.';
+        } else if (prediction.contains('Caution') ||
+            prediction.contains('Half')) {
+          return 'Minor yellowing or graying in some areas. Color changes beginning to appear but not widespread.';
+        } else {
+          return 'Significant discoloration with yellow, green, or gray areas indicating bacterial growth and advanced spoilage.';
+        }
+
+      case 'Texture':
+        if (prediction.contains('Consumable') &&
+            !prediction.contains('Not') &&
+            !prediction.contains('Caution')) {
+          return 'Firm, springy texture that returns to shape when pressed. No sliminess or mushiness detected.';
+        } else if (prediction.contains('Caution') ||
+            prediction.contains('Half')) {
+          return 'Some soft spots beginning to form with minor loss of firmness. Still mostly firm but showing early signs of deterioration.';
+        } else {
+          return 'Slimy surface with breakdown of muscle tissues. Significant deterioration in texture indicating unsafe for consumption.';
+        }
+
+      case 'Moisture':
+        if (prediction.contains('Consumable') &&
+            !prediction.contains('Not') &&
+            !prediction.contains('Caution')) {
+          return 'Natural moisture level without excessive wetness or dryness. Good moisture balance throughout the meat.';
+        } else if (prediction.contains('Caution') ||
+            prediction.contains('Half')) {
+          return 'Uneven moisture distribution with some areas appearing wetter than others. Early signs of moisture issues.';
+        } else {
+          return 'Excessive wetness or abnormally dry areas indicate bacterial activity and protein breakdown. Unsafe moisture profile.';
+        }
+
+      case 'Shape':
+        if (prediction.contains('Consumable') &&
+            !prediction.contains('Not') &&
+            !prediction.contains('Caution')) {
+          return 'Well-defined edges and natural contours maintained. No unusual deformation or swelling.';
+        } else if (prediction.contains('Caution') ||
+            prediction.contains('Half')) {
+          return 'Minor changes in shape and definition. Some areas beginning to lose their natural form.';
+        } else {
+          return 'Significant changes in shape with deformation and breakdown of structural integrity in the meat fibers.';
+        }
+
+      default:
+        return 'No specific details available for this factor.';
+    }
+  }
+
   // Store a map of known images and their unique features for more dynamic descriptions
   static final Map<String, Map<String, dynamic>> _knownImageFeatures = {
     // Each image has specific features we can detect
@@ -335,62 +439,6 @@ class AnalysisVisualizer {
     return features;
   }
 
-  /// Actually use the variation and variant flags to return different descriptions in getFactorDescription
-  static String _getFactorDescriptionByVariation(
-      String factorName,
-      String predictionType,
-      int variation,
-      bool isFirstVariant,
-      bool isSecondVariant) {
-    // Return different descriptions based on the factor, prediction type, and specific image
-    if (factorName == "Color") {
-      if (predictionType == "Consumable") {
-        if (variation == 0) {
-          return "The chicken breast shows normal coloration throughout most areas, supporting its Consumable classification. There is minimal discoloration, all within acceptable limits.";
-        } else if (variation == 1) {
-          return "This chicken has a healthy pinkish-white color characteristic of the Consumable category. The natural color variations are minor and expected.";
-        } else {
-          return "The even color of this chicken breast indicates good quality, properly earning its Consumable classification. It displays the fresh appearance expected in this category.";
-        }
-      } else if (predictionType == "Consumable with Caution" ||
-          predictionType == "Half-consumable") {
-        if (variation == 0) {
-          return "This chicken breast has some minor discoloration in certain areas, placing it in the Consumable with Caution category. These visual changes suggest early quality transitions.";
-        } else if (variation == 1) {
-          return "Some areas of this chicken show slight color changes placing it in the Consumable with Caution category. These changes are still within acceptable ranges for limited use.";
-        } else {
-          return "The color is slightly off in certain spots of this chicken, typical of the Consumable with Caution classification. It's showing signs of having been stored for some time but remains usable.";
-        }
-      } else {
-        // Not Consumable - different descriptions for different variants
-        if (isFirstVariant) {
-          // First image - yellower chicken (3:29)
-          return "This chicken displays obvious yellow-greenish discoloration patterns consistent with the Not Consumable classification. The color changes are particularly concerning in the outer edges and indicate advanced spoilage.";
-        } else if (isSecondVariant) {
-          // Second image - browner chicken (3:28)
-          return "The chicken exhibits significant brown-gray discoloration throughout its surface, clearly placing it in the Not Consumable category. These dark patches indicate bacterial growth and protein breakdown.";
-        } else {
-          // Generic description if we can't identify the specific variant
-          return "This chicken breast shows concerning color variations throughout, indicating it belongs in the Not Consumable category. These patterns typically indicate significant quality issues.";
-        }
-      }
-    }
-
-    // Return similar pattern for other factors
-    return "Analysis not available for this factor.";
-  }
-
-  /// Returns a color based on the factor value (0.0-1.0)
-  static Color getColorFromFactor(double factor) {
-    if (factor >= 0.8) {
-      return Colors.green;
-    } else if (factor >= 0.6) {
-      return Colors.orange;
-    } else {
-      return Colors.red;
-    }
-  }
-
   /// Builds a horizontal factor bar with label and percentage
   static Widget buildFactorBar(String label, double value, Color color) {
     return Row(
@@ -468,74 +516,6 @@ class AnalysisVisualizer {
     );
   }
 
-  /// Returns a text description for a factor based on quality level and image variation
-  static String getFactorDescription(String factorName, String predictionType,
-      {String? imagePath, String? timestamp}) {
-    // First try to get a dynamic analysis based on the actual image content
-    Map<String, String> dynamicAnalysis =
-        analyzeImageContent(imagePath, timestamp, predictionType);
-
-    // If we have a dynamic analysis for this specific factor, use it
-    if (dynamicAnalysis.containsKey(factorName)) {
-      return dynamicAnalysis[factorName]!;
-    }
-
-    // Generate a consistent variation index based on the image path
-    // This ensures the same image gets the same descriptions even across sessions
-    int imageSpecificSeed = 0;
-
-    // Extract unique features from the image path for consistent variation
-    if (imagePath != null) {
-      // Use file name and path length for a unique but consistent hash
-      imageSpecificSeed = imagePath.hashCode;
-
-      // Try to extract file info to make descriptions even more unique
-      final fileName = imagePath.split('/').last.split('\\').last;
-      imageSpecificSeed += fileName.hashCode;
-
-      // Use file creation pattern in name if it exists (like date_time format)
-      final matches = RegExp(r'\d+').allMatches(fileName);
-      if (matches.isNotEmpty) {
-        imageSpecificSeed += matches.first.group(0).hashCode;
-      }
-
-      // Try to incorporate file size/stats if available
-      try {
-        final file = File(imagePath);
-        if (file.existsSync()) {
-          imageSpecificSeed += file.lengthSync() % 7;
-        }
-      } catch (_) {}
-    }
-
-    final int variation = imageSpecificSeed % 3; // 0, 1, or 2
-
-    // Determine which specific image variant we're dealing with (for Not Consumable category)
-    bool isFirstVariant = false;
-    bool isSecondVariant = false;
-
-    if (predictionType == "Not Consumable" ||
-        predictionType == "Not consumable") {
-      // Check if we can identify which variant based on timestamp or path
-      if (timestamp != null && timestamp.contains('3:29')) {
-        isFirstVariant = true; // Yellower chicken (3:29 AM timestamp)
-      } else if (timestamp != null && timestamp.contains('3:28')) {
-        isSecondVariant = true; // Browner chicken (3:28 AM timestamp)
-      } else if (imagePath != null) {
-        // Try to determine by image path if available
-        if (imagePath.contains('May_14_2025_3_29')) {
-          isFirstVariant = true;
-        } else if (imagePath.contains('May_14_2025_3_28')) {
-          isSecondVariant = true;
-        }
-      }
-    }
-
-    // Use our helper method to get factor-specific descriptions based on all our variables
-    return _getFactorDescriptionByVariation(
-        factorName, predictionType, variation, isFirstVariant, isSecondVariant);
-  }
-
   /// Store confidence scores to keep them consistent between screens
   static final Map<String, double> _storedConfidenceScores = {};
 
@@ -576,32 +556,6 @@ class AnalysisVisualizer {
             .withAlpha(70), // Light cream with red tint that matches app theme
       };
     }
-  }
-
-  // This method ensures consistency in confidence scores between history and prediction details
-  static double getConsistentConfidenceScore(String imageId, double baseScore,
-      {bool isHistory = false}) {
-    // Set specific confidence scores for known image IDs
-    if (imageId.contains('May_14_2025_3_43') || imageId.contains('3:43')) {
-      return 0.921; // Consistently high score for consumable chicken
-    } else if (imageId.contains('May_14_2025_3_29') ||
-        imageId.contains('3:29')) {
-      return 0.893; // Consistent score for not consumable (first variant)
-    } else if (imageId.contains('May_14_2025_3_28') ||
-        imageId.contains('3:28')) {
-      return 0.901; // Consistent score for not consumable (second variant)
-    } else if (imageId.contains('caution')) {
-      return 0.831; // Consistent score for caution images
-    }
-
-    // For other images, use the base score but ensure it's within reasonable bounds
-    // More likely to be approximately 0.85 for consumable, 0.83 for caution, 0.89 for not consumable
-    double score = baseScore;
-    if (score < 0.75) score = 0.75;
-    if (score > 0.95) score = 0.95;
-
-    // Return consistent score
-    return score;
   }
 
   /// Get text style for analysis breakdown sections with varied colors
@@ -796,89 +750,95 @@ class AnalysisVisualizer {
               ),
             ),
           ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 0.0),
-          itemCount: infoCards.length,
-          itemBuilder: (context, index) {
-            final card = infoCards[index];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 6.0),
-              decoration: BoxDecoration(
-                color: card["color"], // Solid color with no transparency
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(26),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12.0, vertical: 8.0),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF3E5AB),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(15),
-                        topRight: Radius.circular(15),
-                      ),
+        SizedBox(
+          // Use a SizedBox with a defined height to ensure ListView renders in release mode
+          height: infoCards.length * 180.0, // Estimated height per card
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 0.0),
+            itemCount: infoCards.length,
+            itemBuilder: (context, index) {
+              final card = infoCards[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6.0),
+                decoration: BoxDecoration(
+                  color: card["color"] ??
+                      const Color(
+                          0xFFF3E5AB), // Fallback color if not specified
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(26),
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                    child: Row(
-                      children: [
-                        if (card.containsKey("icon") && card["icon"] != null)
-                          Icon(card["icon"], color: card["color"]),
-                        if (card.containsKey("icon") && card["icon"] != null)
-                          const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            card["title"],
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: card["color"],
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12.0, vertical: 8.0),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF3E5AB),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(15),
+                          topRight: Radius.circular(15),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          if (card.containsKey("icon") && card["icon"] != null)
+                            Icon(card["icon"], color: card["color"]),
+                          if (card.containsKey("icon") && card["icon"] != null)
+                            const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              card["title"],
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: card["color"],
+                              ),
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                    // Divider line
+                    Container(
+                      height: 1,
+                      color: card["color"].withOpacity(0.3),
+                      width: double.infinity,
+                    ),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 16.0),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF3E5AB),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(15),
+                          bottomRight: Radius.circular(15),
                         ),
-                      ],
-                    ),
-                  ),
-                  // Divider line
-                  Container(
-                    height: 1,
-                    color: card["color"].withOpacity(0.3),
-                    width: double.infinity,
-                  ),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 16.0),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF3E5AB),
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(15),
-                        bottomRight: Radius.circular(15),
+                      ),
+                      child: Text(
+                        card["content"],
+                        style: const TextStyle(
+                          fontSize: 14,
+                          height: 1.3,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      card["content"],
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.3,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ],
     );

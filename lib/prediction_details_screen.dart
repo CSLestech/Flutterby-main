@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:check_a_doodle_doo/utils/analysis_visualizer.dart';
-import 'package:check_a_doodle_doo/utils/bounding_box_painter.dart';
+import 'package:check_a_doodle_doo/utils/bounding_box_toggler.dart';
 
 class PredictionDetailsScreen extends StatefulWidget {
   final String imagePath;
@@ -274,14 +274,13 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
                             );
                           },
                         ),
-                      ),
-                      // Bounding boxes overlay with image-relative positioning
+                      ), // Bounding boxes overlay with image-relative positioning
                       SizedBox(
                         height: idealHeight,
                         width: double.infinity,
                         child: CustomPaint(
                           size: Size(constraints.maxWidth, idealHeight),
-                          painter: BoundingBoxPainter(
+                          painter: BoundingBoxToggler().getPainter(
                             boundingBoxes: _boundingBoxes,
                             imageSize: const Size(
                                 300, 280), // Base size for calculations
@@ -533,6 +532,15 @@ class _PredictionDetailsScreenState extends State<PredictionDetailsScreen>
           ),
         ),
         actions: [
+          // Toggle bounding box visibility button
+          IconButton(
+            icon: const Icon(Icons.category),
+            tooltip: 'Toggle bounding boxes',
+            onPressed: () {
+              BoundingBoxToggler().toggle();
+              setState(() {}); // Refresh the UI
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.share),
             onPressed: _shareResults,
