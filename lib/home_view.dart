@@ -13,6 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:check_a_doodle_doo/utils/confidence_tracker.dart';
+import 'package:check_a_doodle_doo/utils/analysis_visualizer.dart';
 
 import 'about_page.dart';
 import 'history_page.dart';
@@ -762,7 +763,7 @@ class HomeViewState extends State<HomeView>
 
     // List of possible server addresses to try in order
     final List<String> serverAddresses = [
-      "http://192.168.1.9:5000/predict", // Local IP - safest option
+      "http://192.168.4.180:5000/predict", // Local IP - safest option
       "http://10.0.2.2:5000/predict", // For Android emulator
       "http://localhost:5000/predict", // Local development server
       "http://172.30.48.1:5000/predict", // Local loopback address
@@ -1400,7 +1401,6 @@ class HomeViewState extends State<HomeView>
           },
         ),
       ];
-
   Widget _buildHomePage() {
     return SafeArea(
       child: SingleChildScrollView(
@@ -1454,17 +1454,96 @@ class HomeViewState extends State<HomeView>
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Color.fromARGB(255, 128, 94, 2),
+                color: Color.fromARGB(255, 253, 242, 210),
               ),
             ),
             const SizedBox(height: 10),
             _buildPromotionalCards(),
-            const SizedBox(height: 20),
-            // Add chicken pattern background with testimonials section
-            // _buildTestimonialsSection(),  // Removed Food Safety Insights section
+            const SizedBox(height: 20), // Educational Info Sections
+            const Text(
+              "Educational Resources",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color.fromARGB(255, 253, 242, 210),
+              ),
+            ),
+            const SizedBox(height: 15),
+
+            // Chicken Classification Guidelines
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Chicken Classification Guidelines",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 253, 242, 210),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  AnalysisVisualizer.buildEducationalInfoSection(
+                    "",
+                    AnalysisVisualizer.getChickenClassificationInfo(),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            // Magnolia Chicken Classes
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Magnolia Chicken Classes",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 253, 242, 210),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  AnalysisVisualizer.buildEducationalInfoSection(
+                    "",
+                    AnalysisVisualizer.getMagnoliaChickenClassInfo(),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            // Chicken Degradation Timeline
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Chicken Degradation Timeline",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 253, 242, 210),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  AnalysisVisualizer.buildEducationalInfoSection(
+                    "",
+                    AnalysisVisualizer.getChickenDegradationInfo(),
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 30),
-            // Removed the image display section since users are redirected to prediction details
-            const SizedBox(height: 5),
           ],
         ),
       ),

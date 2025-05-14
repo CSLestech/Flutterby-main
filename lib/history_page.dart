@@ -106,9 +106,8 @@ class HistoryPage extends StatelessWidget {
                           // Track confidence before navigation
                           ConfidenceTracker.logScore("HISTORY_ITEM_TAP",
                               item['confidenceScore'], {'index': index});
-                          Navigator.push(
-                            // Navigate to details screen when tapped
-                            context,
+                          // Navigate to details
+                          Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => PredictionDetailsScreen(
                                 imagePath: item['imagePath'], // Pass image path
@@ -118,19 +117,21 @@ class HistoryPage extends StatelessWidget {
                                   'color':
                                       item['color'], // Pass prediction color
 
-                                  // CRITICAL FIX: Pass confidence score from history item
-                                  'confidenceScore':
-                                      item['confidenceScore'] ?? 0.75,
+                                  // CRITICAL FIX: Keep original confidence score exactly as stored in history
+                                  // This ensures consistent display between history and detail screens
+                                  'confidenceScore': item['confidenceScore'],
 
                                   // CRITICAL FIX: Also pass processing time from history item
                                   'processingTime': item['processingTime'],
 
-                                  // Mark this as coming from history to help with fallbacks
+                                  // Mark this as coming from history to prevent score adjustment
                                   'fromHistory': true,
                                 },
-                                timestamp: item['timestamp'], // Pass timestamp
+                                timestamp: item['timestamp'] ??
+                                    DateTime.now()
+                                        .toIso8601String(), // Pass timestamp with fallback
                                 onNavigate:
-                                    (int _) {}, // Add empty onNavigate callback
+                                    (_) {}, // Add empty onNavigate callback
                               ),
                             ),
                           );
