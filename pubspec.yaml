@@ -80,7 +80,7 @@ flutter:
     - images/ui/chickanalysis.png
     - images/ui/historytracking.jpg
     - images/ui/userfriendly.jpg
-    - images/ui/historytracking.jpg
+    - images/ui/fastprocessing.png
 
      #  Icons images
     - images/devs/nigg.jpg
@@ -108,6 +108,8 @@ flutter:
     - images/ui/c7.png
     - images/ui/8.png
     - images/ui/9.png
+    - images/ui/consumable188.jpg
+    - images/ui/consumable24.jpg
     
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

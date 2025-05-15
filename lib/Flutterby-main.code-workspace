@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../../../../Dataset"
+		},
+		{
+			"path": "../../../../Demo Images"
 		}
 	],
 	"settings": {}

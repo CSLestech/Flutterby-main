@@ -242,7 +242,7 @@ class HelpPage extends StatelessWidget {
                       tooltip: "The app will process the image to classify it.",
                     ),
                     const HelpStep(
-                      'images/ui/7.png',
+                      'images/ui/fastprocessing.png',
                       "3. View the prediction result displayed on the screen.",
                       icon: Icons.visibility_outlined,
                       tooltip:

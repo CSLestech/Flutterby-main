@@ -1587,7 +1587,7 @@ class HomeViewState extends State<HomeView>
         "description": "Get predictions in seconds with high accuracy.",
         "tooltip": "View detailed results of your latest scan",
         "icon": Icons.speed,
-        "imagePath": "images/ui/fastprocessing.jpg",
+        "imagePath": "images/ui/fastprocessing.png",
         "action": () {
           // If there's at least one item in history, navigate to the latest prediction details
           if (_history.isNotEmpty) {

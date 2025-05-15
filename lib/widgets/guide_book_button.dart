@@ -191,13 +191,13 @@ class GuideBookContent {
                 'Moisture Assessment', // Parameter focusing on moisture level
             'description':
                 'Fresh chicken breast typically has a slight natural sheen but isn\'t excessively wet or dry. Consumable chicken has an even, moderate moisture level. Consumable with caution may show uneven moisture patches. Not consumable chicken often appears abnormally wet with a slimy sheen or overly dry with discolored patches. The system can detect these variations in surface reflectivity that indicate moisture levels.',
-            'image': 'images/ui/moisture.png',
+            'image': 'images/ui/consumable24.jpg',
           },
           {
             'title': 'Shape Analysis', // Parameter focusing on overall shape
             'description':
                 'Shape analysis examines the overall form and structure of the chicken piece. Fresh chicken maintains its proper form with clear definition. Consumable with caution may show minor changes in shape integrity. Not consumable chicken often has a misshapen appearance with visible breakdown in structure. The system evaluates these shape characteristics to help determine overall quality.',
-            'image': 'images/ui/edges.png',
+            'image': 'images/ui/consumable188.jpg',
           },
           {
             'title': 'Experimental Design', // Focus on study methodology
