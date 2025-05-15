@@ -763,7 +763,7 @@ class HomeViewState extends State<HomeView>
 
     // List of possible server addresses to try in order
     final List<String> serverAddresses = [
-      "http://192.168.1.9:5000/predict", // Local IP - safest option
+      "http://10.0.0.241:5000/predict", // Local IP - safest option
       "http://10.0.2.2:5000/predict", // For Android emulator
       "http://localhost:5000/predict", // Local development server
       "http://172.30.48.1:5000/predict", // Local loopback address
@@ -806,13 +806,21 @@ class HomeViewState extends State<HomeView>
         if (mounted) {
           Navigator.of(context).pop();
         }
-
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
 
           // Log full raw response for debugging
           dev.log("FULL SERVER RESPONSE: ${response.body}",
               name: 'ServerDebug');
+
+          // Check if server response indicates a non-chicken breast image
+          if (data.containsKey('is_chicken') && data['is_chicken'] == false) {
+            if (!mounted) return;
+            _showErrorDialog(
+                'The image does not appear to be chicken breast. Please upload a clear image of chicken breast.',
+                title: 'Invalid Image');
+            return;
+          }
 
           // Track raw response for debugging confidence issues
           ConfidenceTracker.logScore(
@@ -890,11 +898,17 @@ class HomeViewState extends State<HomeView>
                 name: 'ServerDebug');
           }
 
+          // Determine prediction type based on confidence score
+          String predictionType = _getPredictionType(confidenceScore);
+          if (predictionType.isEmpty) {
+            predictionType = data['prediction'];
+          }
+
           // Create prediction with guaranteed double confidence score
           final Map<String, dynamic> prediction = {
-            "text": data['prediction'],
-            "icon": _getPredictionIcon(data['prediction']),
-            "color": _getPredictionColor(data['prediction']),
+            "text": predictionType,
+            "icon": _getPredictionIcon(predictionType),
+            "color": _getPredictionColor(predictionType),
             "imagePath": imageFile.path,
             "timestamp": DateTime.now().toString(),
             "confidenceScore": confidenceScore,
@@ -1050,6 +1064,12 @@ class HomeViewState extends State<HomeView>
     });
 
     return result;
+  }
+
+  // Determine prediction type based on confidence score and validate the image
+  String _getPredictionType(double confidenceScore) {
+    // Simply return empty string to use the server's prediction directly
+    return ""; // Empty string means use the server's prediction directly
   }
 
   void _showErrorDialog(String message, {String title = 'Error'}) {
