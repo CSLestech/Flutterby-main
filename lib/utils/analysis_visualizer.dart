@@ -57,54 +57,54 @@ class AnalysisVisualizer {
     switch (factor) {
       case 'Color':
         if (quality == 'Consumable') {
-          return 'The chicken breast shows healthy pink coloration consistent with fresh poultry. No discoloration or darkening was detected.';
+          return 'This chicken looks fresh with a healthy pinkish color, which is what you want to see in fresh chicken.';
         } else if (quality == 'Consumable with Caution' ||
             quality == 'Half-consumable') {
-          return 'The chicken breast shows some minor discoloration in certain areas. While not severe, this indicates the beginning of quality degradation.';
+          return 'The chicken shows slight color changes in some areas. It can still be eaten if cooked thoroughly right away.';
         } else {
           if (isSpecificImage) {
-            return 'The chicken breast shows significant yellowish-gray discoloration especially along the edges, indicating bacterial growth and spoilage progression.';
+            return 'The color of this chicken doesn\'t look right. These color changes suggest it shouldn\'t be eaten.';
           }
-          return 'The chicken breast shows significant discoloration, with gray/green areas that indicate bacterial growth or spoilage.';
+          return 'The chicken\'s color doesn\'t look right. These kinds of color changes usually mean it\'s best not to eat it.';
         }
 
       case 'Texture':
         if (quality == 'Consumable') {
-          return 'The texture appears firm and consistent, with normal muscle fiber structure. No sliminess or unusual patterns detected.';
+          return 'The chicken looks firm with a smooth surface - signs of fresh chicken that\'s good to cook.';
         } else if (quality == 'Consumable with Caution' ||
             quality == 'Half-consumable') {
-          return 'The texture shows some changes in consistency, with slight softening in certain areas. This suggests early stage quality degradation.';
+          return 'The surface of the chicken looks slightly changed. Make sure to cook it thoroughly before eating.';
         } else {
           if (isSpecificImage) {
-            return 'The texture shows significant degradation with visible breakdown of muscle fibers, particularly in the central and left regions of the image.';
+            return 'The chicken doesn\'t look right - the surface appears changed in ways that suggest it shouldn\'t be eaten.';
           }
-          return 'The texture shows significant changes including excessive softening, sliminess, or tacky surface characteristics indicative of spoilage.';
+          return 'The chicken\'s texture doesn\'t look good. These kinds of changes usually mean it\'s best not to eat it.';
         }
 
       case 'Moisture':
         if (quality == 'Consumable') {
-          return 'Appropriate moisture level detected, with no excess liquid or dryness. This is consistent with properly stored fresh chicken.';
+          return 'The chicken appears to have the right amount of moisture - not too wet and not too dry. This is what fresh chicken should look like.';
         } else if (quality == 'Consumable with Caution' ||
             quality == 'Half-consumable') {
-          return 'Some areas show changes in moisture level, either with excess liquid or slight drying. This indicates storage time affecting quality.';
+          return 'The chicken looks a bit wetter or drier than ideal in some spots. It should be cooked thoroughly before eating.';
         } else {
           if (isSpecificImage) {
-            return 'Abnormal moisture levels detected with excessive surface dampness in some areas and unusual dryness in others, indicating improper storage and bacterial activity.';
+            return 'The chicken looks too wet or too dry in ways that suggest it\'s not good to eat anymore.';
           }
-          return 'Significant moisture issues detected, either excessive dampness suggesting bacterial activity or severe drying indicating improper storage.';
+          return 'The chicken has moisture issues that typically mean it shouldn\'t be eaten. Either too wet or too dry in concerning ways.';
         }
 
       case 'Shape':
         if (quality == 'Consumable') {
-          return 'Normal size and shape characteristics with typical muscle structure. No abnormal shapes or structural issues detected.';
+          return 'The chicken has a normal shape and looks intact - just what you want to see in fresh chicken.';
         } else if (quality == 'Consumable with Caution' ||
             quality == 'Half-consumable') {
-          return 'Minor changes to the typical shape characteristics, with some deformation of the normal muscle structure.';
+          return 'The chicken\'s shape looks slightly different than fresh chicken. Make sure to cook it thoroughly if you plan to eat it.';
         } else {
           if (isSpecificImage) {
-            return 'Severe deformation of normal muscle structure with unusual contours and indentations, particularly visible in the marked regions of the sample.';
+            return 'The chicken\'s shape doesn\'t look right. These changes suggest it\'s probably not good to eat anymore.';
           }
-          return 'Severe changes to the normal structure including significant deformation, unusual bulges or indentations.';
+          return 'The chicken doesn\'t have the normal shape and structure of fresh chicken. These changes suggest it shouldn\'t be eaten.';
         }
 
       default:
@@ -114,6 +114,7 @@ class AnalysisVisualizer {
 
   /// Builds a horizontal factor bar with label and percentage
   static Widget buildFactorBar(String label, double value, Color color) {
+    // ...existing code...
     return Row(
       children: [
         SizedBox(
@@ -151,6 +152,7 @@ class AnalysisVisualizer {
 
   /// Builds a class probability bar with label and percentage
   static Widget buildClassBar(String label, double value, Color color) {
+    // ...existing code...
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -191,6 +193,7 @@ class AnalysisVisualizer {
 
   /// Gets a recommendation based on quality classification
   static Map<String, dynamic> getRecommendation(String quality) {
+    // ...existing code...
     switch (quality) {
       case 'Consumable':
         return {
@@ -223,6 +226,7 @@ class AnalysisVisualizer {
   /// Builds an educational info section with consistent styling
   static Widget buildEducationalInfoSection(
       String title, Map<String, dynamic> info) {
+    // ...existing code...
     return Card(
       color: const Color(0xFFF3E5AB)
           .withAlpha(230), // 0.9 opacity is approximately 230 as alpha

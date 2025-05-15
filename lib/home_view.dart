@@ -763,7 +763,7 @@ class HomeViewState extends State<HomeView>
 
     // List of possible server addresses to try in order
     final List<String> serverAddresses = [
-      "http://10.0.0.241:5000/predict", // Local IP - safest option
+      "http://192.168.1.9:5000/predict", // Local IP - safest option
       "http://10.0.2.2:5000/predict", // For Android emulator
       "http://localhost:5000/predict", // Local development server
       "http://172.30.48.1:5000/predict", // Local loopback address
